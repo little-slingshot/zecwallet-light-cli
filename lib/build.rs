@@ -1,7 +1,11 @@
-fn main() -> Result<(), Box<dyn std::error::Error>> {
-    tonic_build::configure()
-        .build_server(true)
-        .compile(&["proto/service.proto", "proto/compact_formats.proto"], &["proto"])?;
-    println!("cargo:rerun-if-changed=proto/service.proto");
-    Ok(())
+use protobuf_codegen_pure;
+
+fn main() {
+    protobuf_codegen_pure::run(protobuf_codegen_pure::Args {
+        out_dir: "src/proto",
+        input: &["proto/service.proto", "proto/compact_formats.proto"],
+        includes: &["proto"],
+        customize: Default::default(),
+    })
+    .expect("protoc");
 }
