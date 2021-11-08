@@ -11,7 +11,7 @@ crate-type = ["cdylib", "rlib"]
 default = ["console_error_panic_hook"]
 
 [dependencies]
-wasm-bindgen = {version = "0.2", features = ["std"]}
+wasm-bindgen = {version = "0.2.7", features = ["std"]}
 wasm-bindgen-futures = "0.4.9"
 js-sys = "0.3.36"
 tokio = "0.2"
@@ -51,34 +51,34 @@ console_error_panic_hook = { version = "0.1.1", optional = true }
 wee_alloc = { version = "0.4.2", optional = true }
 
 [dependencies.bellman]
-git = "https://github.com/adityapk00/librustzcash.git"
-rev = "367793904b432dd25b3a1d8d4b813ecf56022e90"
+git = "https://github.com/little-slingshot/librustzcash.git"
+rev = "d7b390e77dba30126e524350cec0b5c7824343bc"
 default-features = false
 features = ["groth16"]
 
 [dependencies.pairing]
-git = "https://github.com/adityapk00/librustzcash.git"
-rev = "367793904b432dd25b3a1d8d4b813ecf56022e90"
+git = "https://github.com/little-slingshot/librustzcash.git"
+rev = "d7b390e77dba30126e524350cec0b5c7824343bc"
 
 [dependencies.zcash_client_backend]
-git = "https://github.com/adityapk00/librustzcash.git"
-rev = "367793904b432dd25b3a1d8d4b813ecf56022e90"
+git = "https://github.com/little-slingshot/librustzcash.git"
+rev = "d7b390e77dba30126e524350cec0b5c7824343bc"
 default-features = false
 
 [dependencies.zcash_primitives]
-git = "https://github.com/adityapk00/librustzcash.git"
-rev = "367793904b432dd25b3a1d8d4b813ecf56022e90"
+git = "https://github.com/little-slingshot/librustzcash.git"
+rev = "d7b390e77dba30126e524350cec0b5c7824343bc"
 default-features = false
 features = ["transparent-inputs"]
 
 [dependencies.zcash_proofs]
-git = "https://github.com/adityapk00/librustzcash.git"
-rev = "367793904b432dd25b3a1d8d4b813ecf56022e90"
+git = "https://github.com/little-slingshot/librustzcash.git"
+rev = "d7b390e77dba30126e524350cec0b5c7824343bc"
 default-features = false
 
 [dependencies.ff]
-git = "https://github.com/adityapk00/librustzcash.git"
-rev = "367793904b432dd25b3a1d8d4b813ecf56022e90"
+git = "https://github.com/little-slingshot/librustzcash.git"
+rev = "d7b390e77dba30126e524350cec0b5c7824343bc"
 features = ["ff_derive"]
 
 
