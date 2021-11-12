@@ -6,7 +6,7 @@ use crate::proto::compact_formats::{CompactBlock};
 use crate::proto::service::{BlockID, RawTransaction, LightdInfo, SendResponse};
 
 
-// #[wasm_bindgen(module = "/wasmbridge.js")]
+#[wasm_bindgen(module = "/wasmbridge.js")]
 #[wasm_bindgen]
 extern "C" {
   fn getInfo() -> js_sys::Promise;
