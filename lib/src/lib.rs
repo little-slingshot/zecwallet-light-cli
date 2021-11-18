@@ -22,6 +22,7 @@ use wasm_bindgen::prelude::*;
 use json::{object};
 use std::sync::{Mutex, Arc};
 use std::cell::RefCell;
+use log::{info, debug, warn, error};
 
 use crate::lightclient::{LightClient, LightClientConfig};
 
@@ -42,6 +43,7 @@ static ALLOC: wee_alloc::WeeAlloc = wee_alloc::WeeAlloc::INIT;
 #[wasm_bindgen]
 pub async fn litelib_initialize_new(entropy: String) -> String {
   utils::set_panic_hook();
+  debug!("litelib_initialize_new({})", entropy);
 
   let (config, latest_block_height) = match LightClientConfig::create().await {
       Ok((c, h)) => (c, h),
@@ -207,6 +209,8 @@ pub async fn litelib_execute(cmd: String, args_list: String) -> String {
         resp = lightclient.do_info().await;
       } else if cmd == "balance" {
         resp = format!("{}", lightclient.do_balance().pretty(2));
+      } else if cmd == "height" {
+        resp = format!("{}", object!{"height" => lightclient.last_scanned_height()}.pretty(2));
       } else if cmd == "notes" {
         resp = format!("{}", lightclient.do_list_notes(false).pretty(2));
       } else if cmd == "export" {
