@@ -15,6 +15,7 @@ wasm-bindgen = {version = "0.2.7", features = ["std"]}
 wasm-bindgen-futures = "0.4.9"
 js-sys = "0.3.36"
 tokio = "0.2"
+console_log = "0.2"
 rand = { version = "0.7.2", features = ["wasm-bindgen"] }
 base58 = "0.1.0"
 log = "0.4"
@@ -52,33 +53,33 @@ wee_alloc = { version = "0.4.2", optional = true }
 
 [dependencies.bellman]
 git = "https://github.com/little-slingshot/librustzcash.git"
-rev = "d7b390e77dba30126e524350cec0b5c7824343bc"
+rev = "28df48aecdaaea1a01ab7e526fb36ff5e6708851"
 default-features = false
 features = ["groth16"]
 
 [dependencies.pairing]
 git = "https://github.com/little-slingshot/librustzcash.git"
-rev = "d7b390e77dba30126e524350cec0b5c7824343bc"
+rev = "28df48aecdaaea1a01ab7e526fb36ff5e6708851"
 
 [dependencies.zcash_client_backend]
 git = "https://github.com/little-slingshot/librustzcash.git"
-rev = "d7b390e77dba30126e524350cec0b5c7824343bc"
+rev = "28df48aecdaaea1a01ab7e526fb36ff5e6708851"
 default-features = false
 
 [dependencies.zcash_primitives]
 git = "https://github.com/little-slingshot/librustzcash.git"
-rev = "d7b390e77dba30126e524350cec0b5c7824343bc"
+rev = "28df48aecdaaea1a01ab7e526fb36ff5e6708851"
 default-features = false
 features = ["transparent-inputs"]
 
 [dependencies.zcash_proofs]
 git = "https://github.com/little-slingshot/librustzcash.git"
-rev = "d7b390e77dba30126e524350cec0b5c7824343bc"
+rev = "28df48aecdaaea1a01ab7e526fb36ff5e6708851"
 default-features = false
 
 [dependencies.ff]
 git = "https://github.com/little-slingshot/librustzcash.git"
-rev = "d7b390e77dba30126e524350cec0b5c7824343bc"
+rev = "28df48aecdaaea1a01ab7e526fb36ff5e6708851"
 features = ["ff_derive"]
 
 
