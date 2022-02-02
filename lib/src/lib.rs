@@ -59,6 +59,15 @@ pub async fn litelib_initialize_new(entropy: String) -> String {
       return format!("Error: {}", e);
     }
   };
+
+  let entropy : String = "entropy123".to_string();
+  let lightclient = match LightClient::new(&config, latest_block_height, entropy) {
+    Ok(l) => l,
+    Err(e) => {
+      return format!("Error: {}", e);
+    }
+  };
+
   return "Create a new wallet and return the seed for the newly created wallet.".to_string();
 }
 

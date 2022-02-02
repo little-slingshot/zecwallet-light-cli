@@ -182,6 +182,7 @@ impl LightWallet {
         seed_phrase: Option<String>,
         height: u64,
         num_zaddrs: u32,
+        entropy: Option<String>,
     ) -> io::Result<Self> {
         let keys = Keys::new(&config, seed_phrase, num_zaddrs).map_err(|e| Error::new(ErrorKind::InvalidData, e))?;
 
