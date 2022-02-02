@@ -52,7 +52,8 @@ lazy_static! {
 #[wasm_bindgen]
 pub async fn litelib_initialize_new(entropy: String) -> String {
   utils::set_panic_hook();
-  let (config, latest_block_height)  = match LightClientConfig::create().await {
+  let server = LightClientConfig::get_server_or_default(Some("www.com".to_string().to_owned()));
+  let (config, latest_block_height)  = match LightClientConfig::create(server).await {
     Ok((c, h)) => (c,h),
     Err(e) => {
       return format!("Error: {}", e);

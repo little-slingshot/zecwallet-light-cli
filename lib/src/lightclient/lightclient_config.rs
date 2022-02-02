@@ -56,7 +56,7 @@ impl LightClientConfig {
         }
     }
 
-    pub fn create(server: http::Uri) -> io::Result<(LightClientConfig, u64)> {
+    pub async fn create(server: http::Uri) -> io::Result<(LightClientConfig, u64)> {
         use std::net::ToSocketAddrs;
 
         let lc = Runtime::new().unwrap().block_on(async move {
