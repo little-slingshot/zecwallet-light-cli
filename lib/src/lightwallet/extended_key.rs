@@ -1,11 +1,12 @@
-use lazy_static::lazy_static;
+// use lazy_static::lazy_static;
 use ring::hmac::{self, Context, Key};
-use secp256k1::{Error, PublicKey, Secp256k1, SecretKey, SignOnly};
+use secp256k1::{Error, PublicKey, SecretKey};
 
-lazy_static! {
-    static ref SECP256K1_SIGN_ONLY: Secp256k1<SignOnly> = Secp256k1::signing_only();
-    //static ref SECP256K1_VERIFY_ONLY: Secp256k1<VerifyOnly> = Secp256k1::verification_only();
-}
+// lazy_static! {
+//     // TODO: need to replace the operations which do this signing ...
+//     // static ref SECP256K1_SIGN_ONLY: Secp256k1<SignOnly> = Secp256k1::signing_only();
+//     //static ref SECP256K1_VERIFY_ONLY: Secp256k1<VerifyOnly> = Secp256k1::verification_only();
+// }
 /// Random entropy, part of extended key.
 type ChainCode = Vec<u8>;
 
@@ -73,7 +74,7 @@ impl ExtendedPrivKey {
         };
         let sig_bytes = signature.as_ref();
         let (key, chain_code) = sig_bytes.split_at(sig_bytes.len() / 2);
-        let private_key = SecretKey::from_slice(key)?;
+        let private_key = SecretKey::parse_slice(key)?;
         Ok(ExtendedPrivKey {
             private_key,
             chain_code: chain_code.to_vec(),
@@ -84,7 +85,7 @@ impl ExtendedPrivKey {
         let signing_key = Key::new(hmac::HMAC_SHA512, &self.chain_code);
         let mut h = Context::with_key(&signing_key);
         h.update(&[0x00]);
-        h.update(&self.private_key[..]);
+        h.update(&self.private_key.serialize());
         h.update(&index.to_be_bytes());
         h.sign()
     }
@@ -92,8 +93,8 @@ impl ExtendedPrivKey {
     fn sign_normal_key(&self, index: u32) -> ring::hmac::Tag {
         let signing_key = Key::new(hmac::HMAC_SHA512, &self.chain_code);
         let mut h = Context::with_key(&signing_key);
-        let public_key = PublicKey::from_secret_key(&SECP256K1_SIGN_ONLY, &self.private_key);
-        h.update(&public_key.serialize());
+        let public_key = PublicKey::from_secret_key(&self.private_key);
+        h.update(&public_key.serialize_compressed());
         h.update(&index.to_be_bytes());
         h.sign()
     }
@@ -101,7 +102,7 @@ impl ExtendedPrivKey {
     /// Derive a child key from ExtendedPrivKey.
     pub fn derive_private_key(&self, key_index: KeyIndex) -> Result<ExtendedPrivKey, Error> {
         if !key_index.is_valid() {
-            return Err(Error::InvalidTweak);
+            return Err(Error::TweakOutOfRange);
         }
         let signature = match key_index {
             KeyIndex::Hardened(index) => self.sign_hardended_key(index),
@@ -109,8 +110,9 @@ impl ExtendedPrivKey {
         };
         let sig_bytes = signature.as_ref();
         let (key, chain_code) = sig_bytes.split_at(sig_bytes.len() / 2);
-        let mut private_key = SecretKey::from_slice(key)?;
-        private_key.add_assign(&self.private_key[..])?;
+        let mut private_key = SecretKey::parse_slice(key)?;
+        // private_key.add_assign(&self.private_key[..])?;
+        private_key.tweak_add_assign(&self.private_key)?;
         Ok(ExtendedPrivKey {
             private_key,
             chain_code: chain_code.to_vec(),

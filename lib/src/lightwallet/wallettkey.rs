@@ -58,8 +58,7 @@ impl WalletTKey {
     }
 
     pub fn address_from_prefix_sk(prefix: &[u8; 2], sk: &secp256k1::SecretKey) -> String {
-        let secp = secp256k1::Secp256k1::new();
-        let pk = secp256k1::PublicKey::from_secret_key(&secp, &sk);
+        let pk = secp256k1::PublicKey::from_secret_key(&sk);
 
         // Encode into t address
         let mut hash160 = ripemd160::Ripemd160::new();
@@ -89,7 +88,7 @@ impl WalletTKey {
             return Err(io::Error::new(ErrorKind::InvalidData, format!("Invalid Suffix: {:?}", suffix)));
         }
 
-        let key = SecretKey::from_slice(&bytes).map_err(|e| io::Error::new(ErrorKind::InvalidData, e))?;
+        let key = SecretKey::parse_slice(&bytes).map_err(|e| io::Error::new(ErrorKind::InvalidData, e))?;
         let address = Self::address_from_prefix_sk(&config.base58_pubkey_address(), &key);
 
         Ok(WalletTKey {
@@ -126,7 +125,7 @@ impl WalletTKey {
             return Err(io::Error::new(ErrorKind::NotFound, "Wallet locked"));
         }
 
-        Ok(self.key.as_ref().unwrap()[..].to_base58check(&config.base58_secretkey_prefix(), &[0x01]))
+        Ok(self.key.as_ref().unwrap().serialize().to_base58check(&config.base58_secretkey_prefix(), &[0x01]))
     }
 
     #[cfg(test)]
@@ -149,8 +148,7 @@ impl WalletTKey {
         }
 
         Ok(secp256k1::PublicKey::from_secret_key(
-            &secp256k1::Secp256k1::new(),
-            &self.key.unwrap(),
+            &self.key.unwrap()
         ))
     }
 
@@ -176,7 +174,7 @@ impl WalletTKey {
         let key = Optional::read(&mut inp, |r| {
             let mut tpk_bytes = [0u8; 32];
             r.read_exact(&mut tpk_bytes)?;
-            secp256k1::SecretKey::from_slice(&tpk_bytes).map_err(|e| io::Error::new(ErrorKind::InvalidData, e))
+            secp256k1::SecretKey::parse_slice(&tpk_bytes).map_err(|e| io::Error::new(ErrorKind::InvalidData, e))
         })?;
         let address = utils::read_string(&mut inp)?;
 
@@ -203,7 +201,7 @@ impl WalletTKey {
 
         out.write_u8(self.locked as u8)?;
 
-        Optional::write(&mut out, &self.key, |w, sk| w.write_all(&sk[..]))?;
+        Optional::write(&mut out, &self.key, |w, sk| w.write_all(&sk.serialize()))?;
         utils::write_string(&mut out, &self.address)?;
 
         Optional::write(&mut out, &self.hdkey_num, |o, n| o.write_u32::<LittleEndian>(*n))?;
@@ -274,7 +272,7 @@ impl WalletTKey {
                     }
                 };
 
-                let key = secp256k1::SecretKey::from_slice(&sk_bytes[..])
+                let key = secp256k1::SecretKey::parse_slice(&sk_bytes[..])
                     .map_err(|e| io::Error::new(ErrorKind::InvalidData, e))?;
                 self.key = Some(key);
             }
@@ -293,9 +291,9 @@ impl WalletTKey {
                 // For imported keys, encrypt the key into enckey
                 let nonce = secretbox::gen_nonce();
 
-                let sk_bytes = &self.key.as_ref().unwrap()[..];
+                let sk_bytes = &self.key.as_ref().unwrap().serialize();
 
-                self.enc_key = Some(secretbox::seal(&sk_bytes, &nonce, &key));
+                self.enc_key = Some(secretbox::seal(sk_bytes, &nonce, &key));
                 self.nonce = Some(nonce.as_ref().to_vec());
             }
         }
@@ -345,7 +343,7 @@ mod test {
 
             // Gen random key
             OsRng.fill(&mut b);
-            let sk = SecretKey::from_slice(&b).unwrap();
+            let sk = SecretKey::parse_slice(&b).unwrap();
             let address = WalletTKey::address_from_prefix_sk(&config.base58_pubkey_address(), &sk);
             let wtk = WalletTKey::from_raw(&sk, &address, 0);
 

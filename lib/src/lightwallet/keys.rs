@@ -270,7 +270,7 @@ impl Keys {
             let tkeys = Vector::read(&mut reader, |r| {
                 let mut tpk_bytes = [0u8; 32];
                 r.read_exact(&mut tpk_bytes)?;
-                secp256k1::SecretKey::from_slice(&tpk_bytes).map_err(|e| io::Error::new(ErrorKind::InvalidData, e))
+                secp256k1::SecretKey::parse(&tpk_bytes).map_err(|e| io::Error::new(ErrorKind::InvalidData, e))
             })?;
 
             let taddresses = if version >= 4 {
@@ -334,7 +334,8 @@ impl Keys {
             let tkeys = Vector::read(&mut reader, |r| {
                 let mut tpk_bytes = [0u8; 32];
                 r.read_exact(&mut tpk_bytes)?;
-                secp256k1::SecretKey::from_slice(&tpk_bytes).map_err(|e| io::Error::new(ErrorKind::InvalidData, e))
+                // secp256k1::SecretKey::from_slice(&tpk_bytes).map_err(|e| io::Error::new(ErrorKind::InvalidData, e))
+                secp256k1::SecretKey::parse(&tpk_bytes).map_err(|e| io::Error::new(ErrorKind::InvalidData, e))
             })?;
 
             let taddresses = Vector::read(&mut reader, |r| utils::read_string(r))?;
