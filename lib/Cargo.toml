@@ -10,6 +10,8 @@ edition = "2018"
 default = ["embed_params"]
 embed_params = []
 
+[lib]
+crate-type = ["cdylib", "rlib"]
 
 [dependencies]
 wasm-bindgen = { version = "0.2", features = ["std"] }
@@ -20,7 +22,7 @@ bytes = "0.4"
 log4rs = "1.0.0"
 rand = "0.7.3"
 http = "0.2.4"
-tonic = {version = "0.4.3", features = ["tls", "tls-roots"]}
+# tonic = {version = "0.4.3", features = ["tls", "tls-roots"]}
 prost = "0.7.0"
 tokio =  { version = "1.6.0", features = ["full"] }
 tokio-stream = "0.1.6"
@@ -59,9 +61,9 @@ rust-embed = { version = "5.1.0", features = ["debug-embed"] }
 # console_error_panic_hook = { version = "0.1.1", optional = true }
 console_error_panic_hook = { version = "0.1.1" }
 
-zcash_primitives = { git = "https://github.com/adityapk00/librustzcash", rev = "adeb3ec4ad15480482bc2962bc9fe453814db9ee", features = ["transparent-inputs"] }
-zcash_client_backend = { git = "https://github.com/adityapk00/librustzcash", rev = "adeb3ec4ad15480482bc2962bc9fe453814db9ee"}
-zcash_proofs = { git = "https://github.com/adityapk00/librustzcash", rev = "adeb3ec4ad15480482bc2962bc9fe453814db9ee", features = ["multicore"]}
+zcash_primitives = { git = "https://github.com/little-slingshot/librustzcash", rev = "366413ce57f5d39b9fc65407c154beec49c7590d", features = ["transparent-inputs"] }
+zcash_client_backend = { git = "https://github.com/little-slingshot/librustzcash", rev = "366413ce57f5d39b9fc65407c154beec49c7590d"}
+zcash_proofs = { git = "https://github.com/little-slingshot/librustzcash", rev = "366413ce57f5d39b9fc65407c154beec49c7590d", features = ["multicore"]}
 
 [dev-dependencies]
 portpicker = "0.1.0"

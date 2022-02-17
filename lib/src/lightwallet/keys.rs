@@ -448,7 +448,7 @@ impl Keys {
     pub fn get_taddr_to_sk_map(&self) -> HashMap<String, secp256k1::SecretKey> {
         self.tkeys
             .iter()
-            .map(|tk| (tk.address.clone(), tk.key.unwrap().clone()))
+            .map(|tk| (tk.address.clone(), tk.key.as_ref().unwrap().clone()))
             .collect()
     }
 

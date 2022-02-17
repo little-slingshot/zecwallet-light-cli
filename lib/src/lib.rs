@@ -159,7 +159,7 @@ pub async fn litelib_execute(cmd: String, args_list: String) -> String {
     let lightclient: Arc<LightClient>;
     {
       let lc = LIGHTCLIENT.lock().unwrap();
-      if ( lc.borrow().is_none() ){
+      if lc.borrow().is_none() {
         return format!("Error: Light Client is not initialized");
       }
       lightclient = lc.borrow().as_ref().unwrap().clone();
