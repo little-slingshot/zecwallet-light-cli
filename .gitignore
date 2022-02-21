@@ -5,3 +5,9 @@ history.txt
 /.idea/
 tarpaulin-report.html
 /log*
+rsd/*
+lib/rsd/*
+/testdata
+/tmp
+
+
