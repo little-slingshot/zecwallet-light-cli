@@ -459,17 +459,8 @@ impl LightClient {
         Ok(l)
     }
 
-    /// Create a brand new wallet with a new seed phrase. Will fail if a wallet file 
-    /// already exists on disk
-    pub fn new(config: &LightClientConfig, latest_block: u64) -> io::Result<Self> {
-        #[cfg(all(not(target_os="ios"), not(target_os="android")))]
-        {        
-            if config.wallet_exists() {
-                return Err(Error::new(ErrorKind::AlreadyExists,
-                        "Cannot create a new wallet from seed, because a wallet already exists"));
-            }
-        }
 
+    fn new_wallet(config: &LightClientConfig, latest_block: u64, num_zaddres: u32, entropy: String) -> io::Result<Self>  {
         let mut l = LightClient {
                 wallet          : Arc::new(RwLock::new(LightWallet::new(None, config, latest_block)?)),
                 config          : config.clone(),
@@ -479,18 +470,35 @@ impl LightClient {
                 sync_status     : Arc::new(RwLock::new(WalletStatus::new())),
             };
 
-        l.set_wallet_initial_state(latest_block);
+            l.set_wallet_initial_state(latest_block);
         
-        #[cfg(feature = "embed_params")]
-        l.read_sapling_params();
+            #[cfg(feature = "embed_params")]
+            l.read_sapling_params();
+    
+            info!("Created new wallet with a new seed!");
+            info!("Created LightClient to {}", &config.server);
+    
+            // Save
+            l.do_save().map_err(|s| io::Error::new(ErrorKind::PermissionDenied, s))?;
+    
+            Ok(l)
+                
+    }
 
-        info!("Created new wallet with a new seed!");
-        info!("Created LightClient to {}", &config.server);
 
-        // Save
-        l.do_save().map_err(|s| io::Error::new(ErrorKind::PermissionDenied, s))?;
+    /// Create a brand new wallet with a new seed phrase. Will fail if a wallet file 
+    /// already exists on disk
+    pub fn new(config: &LightClientConfig, latest_block: u64, entropy: String) -> io::Result<Self> {
+        #[cfg(all(not(target_os="ios"), not(target_os="android")))]
+        {        
+            if config.wallet_exists() {
+                return Err(Error::new(ErrorKind::AlreadyExists,
+                        "Cannot create a new wallet from seed, because a wallet already exists"));
+            }
+        }
 
-        Ok(l)
+        Self::new_wallet(config, latest_block, 1, entropy)
+
     }
 
     pub fn new_from_phrase(seed_phrase: String, config: &LightClientConfig, birthday: u64, overwrite: bool) -> io::Result<Self> {
