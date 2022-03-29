@@ -23,15 +23,16 @@ use zcash_primitives::sapling::{Node};
 use zcash_client_backend::encoding::{decode_payment_address, encode_payment_address};
 
 use log::{info, warn, error, LevelFilter};
-use log4rs::append::rolling_file::RollingFileAppender;
-use log4rs::encode::pattern::PatternEncoder;
-use log4rs::config::{Appender, Config, Root};
-use log4rs::filter::threshold::ThresholdFilter;
-use log4rs::append::rolling_file::policy::compound::{
-    CompoundPolicy,
-    trigger::size::SizeTrigger,
-    roll::fixed_window::FixedWindowRoller,
-};
+
+// use log4rs::append::rolling_file::RollingFileAppender;
+// use log4rs::encode::pattern::PatternEncoder;
+// use log4rs::config::{Appender, Config, Root};
+// use log4rs::filter::threshold::ThresholdFilter;
+// use log4rs::append::rolling_file::policy::compound::{
+//     CompoundPolicy,
+//     trigger::size::SizeTrigger,
+//     roll::fixed_window::FixedWindowRoller,
+// };
 
 use crate::grpcconnector::{self, *};
 use crate::lightwallet::{fee, NodePosition};
@@ -107,35 +108,35 @@ impl LightClientConfig {
     }
 
 
-    /// Build the Logging config
-    pub fn get_log_config(&self) -> io::Result<Config> {
-        let window_size = 3; // log0, log1, log2
-        let fixed_window_roller =
-            FixedWindowRoller::builder().build("zecwallet-light-wallet-log{}",window_size).unwrap();
-        let size_limit = 5 * 1024 * 1024; // 5MB as max log file size to roll
-        let size_trigger = SizeTrigger::new(size_limit);
-        let compound_policy = CompoundPolicy::new(Box::new(size_trigger),Box::new(fixed_window_roller));
+    // /// Build the Logging config
+    // pub fn get_log_config(&self) -> io::Result<Config> {
+    //     let window_size = 3; // log0, log1, log2
+    //     let fixed_window_roller =
+    //         FixedWindowRoller::builder().build("zecwallet-light-wallet-log{}",window_size).unwrap();
+    //     let size_limit = 5 * 1024 * 1024; // 5MB as max log file size to roll
+    //     let size_trigger = SizeTrigger::new(size_limit);
+    //     let compound_policy = CompoundPolicy::new(Box::new(size_trigger),Box::new(fixed_window_roller));
 
-        Config::builder()
-            .appender(
-                Appender::builder()
-                    .filter(Box::new(ThresholdFilter::new(LevelFilter::Info)))
-                    .build(
-                        "logfile",
-                        Box::new(
-                            RollingFileAppender::builder()
-                                .encoder(Box::new(PatternEncoder::new("{d} {l}::{m}{n}")))
-                                .build(self.get_log_path(), Box::new(compound_policy))?,
-                        ),
-                    ),
-            )
-            .build(
-                Root::builder()
-                    .appender("logfile")
-                    .build(LevelFilter::Debug),
-            )
-            .map_err(|e|Error::new(ErrorKind::Other, format!("{}", e)))
-    }
+    //     Config::builder()
+    //         .appender(
+    //             Appender::builder()
+    //                 .filter(Box::new(ThresholdFilter::new(LevelFilter::Info)))
+    //                 .build(
+    //                     "logfile",
+    //                     Box::new(
+    //                         RollingFileAppender::builder()
+    //                             .encoder(Box::new(PatternEncoder::new("{d} {l}::{m}{n}")))
+    //                             .build(self.get_log_path(), Box::new(compound_policy))?,
+    //                     ),
+    //                 ),
+    //         )
+    //         .build(
+    //             Root::builder()
+    //                 .appender("logfile")
+    //                 .build(LevelFilter::Debug),
+    //         )
+    //         .map_err(|e|Error::new(ErrorKind::Other, format!("{}", e)))
+    // }
 
     pub fn get_zcash_data_path(&self) -> Box<Path> {
         let mut zcash_data_location; 
@@ -581,15 +582,15 @@ impl LightClient {
         Ok(lc)
     }
 
-    pub fn init_logging(&self) -> io::Result<()> {
-        // Configure logging first.
-        let log_config = self.config.get_log_config()?;
-        log4rs::init_config(log_config).map_err(|e| {
-            std::io::Error::new(ErrorKind::Other, e)
-        })?;
+    // pub fn init_logging(&self) -> io::Result<()> {
+    //     // Configure logging first.
+    //     let log_config = self.config.get_log_config()?;
+    //     log4rs::init_config(log_config).map_err(|e| {
+    //         std::io::Error::new(ErrorKind::Other, e)
+    //     })?;
 
-        Ok(())
-    }
+    //     Ok(())
+    // }
 
     pub fn attempt_recover_seed(config: &LightClientConfig, password: Option<String>) -> Result<String, String> {
         use std::io::prelude::*;
