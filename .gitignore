@@ -9,5 +9,9 @@ rsd/*
 lib/rsd/*
 /testdata
 /tmp
+/www/libtest/node_modules
+/www/libtest/dist
+*.1.rs
+*.2.rs
 
 
