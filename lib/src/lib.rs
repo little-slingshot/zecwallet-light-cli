@@ -8,9 +8,12 @@ use log::{info, warn, error, LevelFilter};
 // a skeleton of the library (only function stubs will be compiled).
 
 // To bring in the _actual logic_ of the zwl-lib library
-// please uncomment both modules below. (at the same time as they circularly depend on each other)
-// pub mod lightclient;
-// pub mod lightwallet;
+// please uncomment both modules below 
+// (and also uncommenting grpcconnector may help rid of grpcconnector not in the root errors)
+// (at the same time as they circularly depend on each other)
+pub mod lightclient;
+pub mod lightwallet;
+pub mod grpcconnector;
 
 
 // This is to test imports
