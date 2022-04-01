@@ -1,5 +1,16 @@
 #![allow(unused)]
+
+#[macro_use]
+extern crate rust_embed;
+
+
 use log::{info, warn, error, LevelFilter};
+
+#[cfg(feature = "embed_params")]
+#[derive(RustEmbed)]
+#[folder = "zcash-params/"]
+pub struct SaplingParams;
+
 
 // Note: `cargo build` or `wasm-pack build` will first pull in and compile ALL the dependencies
 //       from Cargo.toml regardless whether they are _actually_ imported or not in the codebase.
