@@ -8,13 +8,13 @@ pub mod crypto {
 
   pub mod secretbox {
 
-    pub fn open(enc_seed:&[u8], nonce:&[u8], key: &Key) -> Result<Vec<u8>, String> {
+    pub fn open(enc_seed:&[u8], nonce:&Nonce, key: &Key) -> Result<Vec<u8>, String> {
         // Err(String::from("Not implemented"))
         // return [1,2,3].to_vec()
         Ok([0x42;32].to_vec())
     }
 
-    fn gen_nonce() -> Nonce {
+    pub fn gen_nonce() -> Nonce {
         let my_nonce =  Nonce {
            name: String::from("Bob from get_nonce()"),
            age: 42,
@@ -24,7 +24,7 @@ pub mod crypto {
     }
 
     // fn seal(seed_bytes: &[u8], nonce: &Nonce, key: &Key) -> cipher {
-    fn seal(seed_bytes: &[u8], nonce: &Nonce, key: &Key) -> Vec<u8> {
+    pub fn seal(seed_bytes: &[u8], nonce: &Nonce, key: &Key) -> Vec<u8> {
         return [1,2,3].to_vec()
     }
 
@@ -40,8 +40,29 @@ pub mod crypto {
       age: u32,
     }
 
+    // impl std::vec::ToVec<Vec<u8>> for Nonce{
+    //   fn to_vec(&self) -> Vec<u8> {
+        
+    //   }
+    // }    
+
+    // impl AsRef<[u8]> for Nonce {
+    //   fn as_ref(&self) -> &[u8]{
+    //     // return random slice? but this is clice on the heap?
+    //     let a = [1,2,3];
+    //     &a
+    //   }
+    // }
+
+    impl AsRef<Nonce> for Nonce {
+      fn as_ref(&self) -> &Nonce {
+        // return random slice? but this is clice on the heap?
+        self
+      }
+    }
+
     impl Nonce{
-      fn from_slice(slice: &[u8]) -> Result<Nonce, String> {
+      pub fn from_slice(slice: &[u8]) -> Result<Nonce, String> {
           let my_nonce =  Nonce {
              name: String::from("Bob"),
              age: 42,
@@ -49,6 +70,12 @@ pub mod crypto {
 
           Ok(my_nonce)
       }
+
+      pub fn to_vec(&self) -> Vec<u8> {
+        // Vec::new()
+        // vec![1,2,3]
+        vec![0x20; 32]
+      }      
     }
 
     // -----------------------
