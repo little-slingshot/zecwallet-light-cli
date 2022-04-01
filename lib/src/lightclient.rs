@@ -632,7 +632,7 @@ impl LightClient {
         };
 
         let phrase = if encrypted {
-            use sodiumoxide::crypto::secretbox;
+            use crate::fakeoxide::crypto::secretbox;
             use crate::lightwallet::double_sha256;
 
             // Get the doublesha256 of the password, which is the right length

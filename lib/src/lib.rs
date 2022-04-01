@@ -26,6 +26,8 @@ pub mod lightclient;
 pub mod lightwallet;
 pub mod grpcconnector;
 
+pub mod fakeoxide;
+
 
 // This is to test imports
 // use crate::lightwallet::{LightWallet, message::Message};

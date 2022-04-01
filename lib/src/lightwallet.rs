@@ -20,7 +20,7 @@ use secp256k1::SecretKey;
 use byteorder::{LittleEndian, ReadBytesExt, WriteBytesExt};
 use sha2::{Digest, Sha256};
 
-use sodiumoxide::crypto::secretbox;
+use crate::fakeoxide::crypto::secretbox;
 
 use zcash_client_backend::{
     encoding::{

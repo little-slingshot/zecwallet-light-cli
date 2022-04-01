@@ -3,7 +3,7 @@ use std::io::{Error, ErrorKind};
 
 use byteorder::{LittleEndian, ReadBytesExt, WriteBytesExt};
 
-use sodiumoxide::crypto::secretbox;
+use crate::fakeoxide::crypto::secretbox;
 
 use zcash_primitives::{
     serialize::{Vector, Optional},
@@ -281,7 +281,7 @@ pub mod tests {
   use zcash_client_backend::{
     encoding::{encode_payment_address, decode_extended_spending_key, decode_extended_full_viewing_key}
   };
-  use sodiumoxide::crypto::secretbox;
+  use crate::fakeoxide::crypto::secretbox;
 
   use crate::lightclient::LightClientConfig;
   use super::WalletZKey;
