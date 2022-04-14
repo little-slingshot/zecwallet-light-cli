@@ -396,7 +396,7 @@ impl LightWallet {
         let tkeys = Vector::read(&mut reader, |r| {
             let mut tpk_bytes = [0u8; 32];
             r.read_exact(&mut tpk_bytes)?;
-            secp256k1::SecretKey::from_slice(&tpk_bytes).map_err(|e| io::Error::new(ErrorKind::InvalidData, e))
+            secp256k1::SecretKey::parse_slice(&tpk_bytes).map_err(|e| io::Error::new(ErrorKind::InvalidData, e))
         })?;      
         
         let taddresses = if version >= 4 {
@@ -519,7 +519,7 @@ impl LightWallet {
 
         // Write the transparent private keys
         Vector::write(&mut writer, &self.tkeys.read().unwrap(),
-            |w, pk| w.write_all(&pk[..])
+            |w, pk| w.write_all(&pk.serialize())
         )?;
 
         // Write the transparent addresses
@@ -616,7 +616,7 @@ impl LightWallet {
     pub fn get_t_secret_keys(&self) -> Vec<(String, String)> {
         self.tkeys.read().unwrap().iter().map(|sk| {
             (self.address_from_sk(sk), 
-             sk[..].to_base58check(&self.config.base58_secretkey_prefix(), &[0x01]))
+             sk.serialize().to_base58check(&self.config.base58_secretkey_prefix(), &[0x01]))
         }).collect::<Vec<(String, String)>>()
     }
 
@@ -901,8 +901,7 @@ impl LightWallet {
     }
 
     pub fn address_from_prefix_sk(prefix: &[u8; 2], sk: &secp256k1::SecretKey) -> String {
-        let secp = secp256k1::Secp256k1::new();
-        let pk = secp256k1::PublicKey::from_secret_key(&secp, &sk);
+        let pk = secp256k1::PublicKey::from_secret_key(&sk);        
 
         // Encode into t address
         let mut hash160 = ripemd160::Ripemd160::new();
@@ -2340,6 +2339,7 @@ impl LightWallet {
 
                 match address_to_sk.get(&utxo.address) {
                     Some(sk) => builder.add_transparent_input(*sk, outpoint.clone(), coin.clone()),
+                    // Some(sk) => builder.add_transparent_input(sk.clone(), outpoint.clone(), coin.clone()), // for reference
                     None     => {
                         // Something is very wrong
                         let e = format!("Couldn't find the secreykey for taddr {}", utxo.address);
