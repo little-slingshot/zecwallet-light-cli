@@ -11,6 +11,8 @@ use log::{info, warn, error, LevelFilter};
 #[folder = "zcash-params/"]
 pub struct SaplingParams;
 
+pub mod proto; 
+
 
 // Note: `cargo build` or `wasm-pack build` will first pull in and compile ALL the dependencies
 //       from Cargo.toml regardless whether they are _actually_ imported or not in the codebase.

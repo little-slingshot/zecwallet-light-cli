@@ -7,12 +7,15 @@ edition = "2018"
 crate-type = ["cdylib", "rlib"]
 
 [features]
-default = ["embed_params"]
+default = ["embed_params", "zephyr_wasm"]
 embed_params = []
+zephyr_wasm = []
 
 [dependencies]
 wasm-bindgen = { version = "0.2", features = ["std"] }
 wasm-bindgen-futures = "0.4.9"
+js-sys = "0.3.36"
+
 base58 = "0.1.0"
 base64 = "0.12.3"
 log = "0.4"
@@ -37,7 +40,8 @@ libflate = "0.1"
 subtle = "2"
 threadpool = "1.8.0"
 num_cpus = "1.12.0"
-# rayon = "1.5"
+# rayon is here to satisfy compiler, but I don't think it will _actually_ run within WASM
+rayon = "1.5"
 
 # tonic = { version = "0.2.1", features = ["tls", "tls-roots"] }
 bytes = "0.4"
