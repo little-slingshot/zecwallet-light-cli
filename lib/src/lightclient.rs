@@ -390,16 +390,16 @@ impl LightClient {
     }
 
 
-//     fn write_file_if_not_exists(dir: &Box<Path>, name: &str, bytes: &[u8]) -> io::Result<()> {
-//         let mut file_path = dir.to_path_buf();
-//         file_path.push(name);
-//         if !file_path.exists() {
-//             let mut file = File::create(&file_path)?;
-//             file.write_all(bytes)?;
-//         }
+    fn write_file_if_not_exists(dir: &Box<Path>, name: &str, bytes: &[u8]) -> io::Result<()> {
+        let mut file_path = dir.to_path_buf();
+        file_path.push(name);
+        if !file_path.exists() {
+            let mut file = File::create(&file_path)?;
+            file.write_all(bytes)?;
+        }
 
-//         Ok(())
-//     }
+        Ok(())
+    }
 
     #[cfg(feature = "embed_params")]
     fn read_sapling_params(&mut self) {
@@ -409,515 +409,516 @@ impl LightClient {
         self.sapling_spend.extend_from_slice(SaplingParams::get("sapling-spend.params").unwrap().as_ref());
     }
 
-//     pub fn set_sapling_params(&mut self, sapling_output: &[u8], sapling_spend: &[u8]) -> Result<(), String> {
-//         use sha2::{Sha256, Digest};
+    pub fn set_sapling_params(&mut self, sapling_output: &[u8], sapling_spend: &[u8]) -> Result<(), String> {
+        use sha2::{Sha256, Digest};
 
-//         // The hashes of the params need to match
-//         const SAPLING_OUTPUT_HASH: &str = "2f0ebbcbb9bb0bcffe95a397e7eba89c29eb4dde6191c339db88570e3f3fb0e4";
-//         const SAPLING_SPEND_HASH: &str = "8e48ffd23abb3a5fd9c5589204f32d9c31285a04b78096ba40a79b75677efc13";
+        // The hashes of the params need to match
+        const SAPLING_OUTPUT_HASH: &str = "2f0ebbcbb9bb0bcffe95a397e7eba89c29eb4dde6191c339db88570e3f3fb0e4";
+        const SAPLING_SPEND_HASH: &str = "8e48ffd23abb3a5fd9c5589204f32d9c31285a04b78096ba40a79b75677efc13";
 
-//         if SAPLING_OUTPUT_HASH.to_string() != hex::encode(Sha256::digest(&sapling_output)) {
-//             return Err(format!("sapling-output hash didn't match. expected {}, found {}", SAPLING_OUTPUT_HASH, hex::encode(Sha256::digest(&sapling_output)) ))
-//         }
-//         if SAPLING_SPEND_HASH.to_string() != hex::encode(Sha256::digest(&sapling_spend)) {
-//             return Err(format!("sapling-spend hash didn't match. expected {}, found {}", SAPLING_SPEND_HASH, hex::encode(Sha256::digest(&sapling_spend)) ))
-//         }
+        if SAPLING_OUTPUT_HASH.to_string() != hex::encode(Sha256::digest(&sapling_output)) {
+            return Err(format!("sapling-output hash didn't match. expected {}, found {}", SAPLING_OUTPUT_HASH, hex::encode(Sha256::digest(&sapling_output)) ))
+        }
+        if SAPLING_SPEND_HASH.to_string() != hex::encode(Sha256::digest(&sapling_spend)) {
+            return Err(format!("sapling-spend hash didn't match. expected {}, found {}", SAPLING_SPEND_HASH, hex::encode(Sha256::digest(&sapling_spend)) ))
+        }
 
-//         // Will not overwrite previous params
-//         if self.sapling_output.is_empty() {
-//             self.sapling_output.extend_from_slice(sapling_output);
-//         }
+        // Will not overwrite previous params
+        if self.sapling_output.is_empty() {
+            self.sapling_output.extend_from_slice(sapling_output);
+        }
 
-//         if self.sapling_spend.is_empty() {
-//             self.sapling_spend.extend_from_slice(sapling_spend);
-//         }
+        if self.sapling_spend.is_empty() {
+            self.sapling_spend.extend_from_slice(sapling_spend);
+        }
 
-//         // Ensure that the sapling params are stored on disk properly as well. Only on desktop
-//         if cfg!(all(not(target_os="ios"), not(target_os="android"))) {
-//             match self.config.get_zcash_params_path() {
-//                 Ok(zcash_params_dir) => {
-//                     // Create the sapling output and spend params files
-//                     match LightClient::write_file_if_not_exists(&zcash_params_dir, "sapling-output.params", &self.sapling_output) {
-//                         Ok(_) => {},
-//                         Err(e) => eprintln!("Warning: Couldn't write the output params!\n{}", e)
-//                     };
+        // Ensure that the sapling params are stored on disk properly as well. Only on desktop
+        if cfg!(all(not(target_os="ios"), not(target_os="android"))) {
+            match self.config.get_zcash_params_path() {
+                Ok(zcash_params_dir) => {
+                    // Create the sapling output and spend params files
+                    match LightClient::write_file_if_not_exists(&zcash_params_dir, "sapling-output.params", &self.sapling_output) {
+                        Ok(_) => {},
+                        Err(e) => eprintln!("Warning: Couldn't write the output params!\n{}", e)
+                    };
                     
-//                     match LightClient::write_file_if_not_exists(&zcash_params_dir, "sapling-spend.params", &self.sapling_spend) {
-//                         Ok(_) => {},
-//                         Err(e) => eprintln!("Warning: Couldn't write the output params!\n{}", e)
-//                     }
-//                 },
-//                 Err(e) => {
-//                     eprintln!("{}", e);
-//                 }
-//             };
-//         }
+                    match LightClient::write_file_if_not_exists(&zcash_params_dir, "sapling-spend.params", &self.sapling_spend) {
+                        Ok(_) => {},
+                        Err(e) => eprintln!("Warning: Couldn't write the output params!\n{}", e)
+                    }
+                },
+                Err(e) => {
+                    eprintln!("{}", e);
+                }
+            };
+        }
         
-//         Ok(())
-//     }
+        Ok(())
+    }
 
-//     /// Method to create a test-only version of the LightClient
-//     #[allow(dead_code)]
-//     pub fn unconnected(seed_phrase: String, dir: Option<String>) -> io::Result<Self> {
-//         let config = LightClientConfig::create_unconnected("test".to_string(), dir);
-//         let mut l = LightClient {
-//                 wallet          : Arc::new(RwLock::new(LightWallet::new(Some(seed_phrase), &config, 0)?)),
-//                 config          : config.clone(),
-//                 sapling_output  : vec![], 
-//                 sapling_spend   : vec![],
-//                 sync_lock       : Mutex::new(()),
-//                 sync_status     : Arc::new(RwLock::new(WalletStatus::new())),
-//             };
+    /// Method to create a test-only version of the LightClient
+    #[allow(dead_code)]
+    pub fn unconnected(seed_phrase: String, dir: Option<String>) -> io::Result<Self> {
+        let config = LightClientConfig::create_unconnected("test".to_string(), dir);
+        let mut l = LightClient {
+                wallet          : Arc::new(RwLock::new(LightWallet::new(Some(seed_phrase), &config, 0)?)),
+                config          : config.clone(),
+                sapling_output  : vec![], 
+                sapling_spend   : vec![],
+                sync_lock       : Mutex::new(()),
+                sync_status     : Arc::new(RwLock::new(WalletStatus::new())),
+            };
 
-//         l.set_wallet_initial_state(0);
+        l.set_wallet_initial_state(0);
         
-//         #[cfg(feature = "embed_params")]
-//         l.read_sapling_params();
+        #[cfg(feature = "embed_params")]
+        l.read_sapling_params();
 
-//         info!("Created new wallet!");
-//         info!("Created LightClient to {}", &config.server);
+        info!("Created new wallet!");
+        info!("Created LightClient to {}", &config.server);
 
-//         Ok(l)
-//     }
+        Ok(l)
+    }
 
 
-//     fn new_wallet(config: &LightClientConfig, latest_block: u64, num_zaddres: u32, entropy: String) -> io::Result<Self>  {
-//         let mut l = LightClient {
-//                 wallet          : Arc::new(RwLock::new(LightWallet::new(None, config, latest_block)?)),
-//                 config          : config.clone(),
-//                 sapling_output  : vec![], 
-//                 sapling_spend   : vec![],
-//                 sync_lock       : Mutex::new(()),
-//                 sync_status     : Arc::new(RwLock::new(WalletStatus::new())),
-//             };
+    fn new_wallet(config: &LightClientConfig, latest_block: u64, num_zaddres: u32, entropy: String) -> io::Result<Self>  {
+        let mut l = LightClient {
+                wallet          : Arc::new(RwLock::new(LightWallet::new(None, config, latest_block)?)),
+                config          : config.clone(),
+                sapling_output  : vec![], 
+                sapling_spend   : vec![],
+                sync_lock       : Mutex::new(()),
+                sync_status     : Arc::new(RwLock::new(WalletStatus::new())),
+            };
 
-//             l.set_wallet_initial_state(latest_block);
+            l.set_wallet_initial_state(latest_block);
         
-//             #[cfg(feature = "embed_params")]
-//             l.read_sapling_params();
+            #[cfg(feature = "embed_params")]
+            l.read_sapling_params();
     
-//             info!("Created new wallet with a new seed!");
-//             info!("Created LightClient to {}", &config.server);
+            info!("Created new wallet with a new seed!");
+            info!("Created LightClient to {}", &config.server);
     
-//             // Save
-//             l.do_save().map_err(|s| io::Error::new(ErrorKind::PermissionDenied, s))?;
+            // Save
+            l.do_save().map_err(|s| io::Error::new(ErrorKind::PermissionDenied, s))?;
     
-//             Ok(l)
+            Ok(l)
                 
-//     }
+    }
 
 
-//     /// Create a brand new wallet with a new seed phrase. Will fail if a wallet file 
-//     /// already exists on disk
-//     pub fn new(config: &LightClientConfig, latest_block: u64, entropy: String) -> io::Result<Self> {
-//         #[cfg(all(not(target_os="ios"), not(target_os="android")))]
-//         {        
-//             if config.wallet_exists() {
-//                 return Err(Error::new(ErrorKind::AlreadyExists,
-//                         "Cannot create a new wallet from seed, because a wallet already exists"));
-//             }
-//         }
+    /// Create a brand new wallet with a new seed phrase. Will fail if a wallet file 
+    /// already exists on disk
+    pub fn new(config: &LightClientConfig, latest_block: u64, entropy: String) -> io::Result<Self> {
+        #[cfg(all(not(target_os="ios"), not(target_os="android")))]
+        {        
+            if config.wallet_exists() {
+                return Err(Error::new(ErrorKind::AlreadyExists,
+                        "Cannot create a new wallet from seed, because a wallet already exists"));
+            }
+        }
 
-//         Self::new_wallet(config, latest_block, 1, entropy)
+        Self::new_wallet(config, latest_block, 1, entropy)
 
-//     }
+    }
 
-//     pub fn new_from_phrase(seed_phrase: String, config: &LightClientConfig, birthday: u64, overwrite: bool) -> io::Result<Self> {
-//         #[cfg(all(not(target_os="ios"), not(target_os="android")))]
-//         {
-//             if !overwrite && config.wallet_exists() {
-//                 return Err(Error::new(ErrorKind::AlreadyExists,
-//                         "Cannot create a new wallet from seed, because a wallet already exists"));
-//             }
-//         }
+    pub fn new_from_phrase(seed_phrase: String, config: &LightClientConfig, birthday: u64, overwrite: bool) -> io::Result<Self> {
+        #[cfg(all(not(target_os="ios"), not(target_os="android")))]
+        {
+            if !overwrite && config.wallet_exists() {
+                return Err(Error::new(ErrorKind::AlreadyExists,
+                        "Cannot create a new wallet from seed, because a wallet already exists"));
+            }
+        }
 
-//         let mut l = LightClient {
-//                 wallet          : Arc::new(RwLock::new(LightWallet::new(Some(seed_phrase), config, birthday)?)),
-//                 config          : config.clone(),
-//                 sapling_output  : vec![], 
-//                 sapling_spend   : vec![],
-//                 sync_lock       : Mutex::new(()),
-//                 sync_status     : Arc::new(RwLock::new(WalletStatus::new())),
-//             };
+        let mut l = LightClient {
+                wallet          : Arc::new(RwLock::new(LightWallet::new(Some(seed_phrase), config, birthday)?)),
+                config          : config.clone(),
+                sapling_output  : vec![], 
+                sapling_spend   : vec![],
+                sync_lock       : Mutex::new(()),
+                sync_status     : Arc::new(RwLock::new(WalletStatus::new())),
+            };
 
-//         println!("Setting birthday to {}", birthday);
-//         l.set_wallet_initial_state(birthday);
+        println!("Setting birthday to {}", birthday);
+        l.set_wallet_initial_state(birthday);
         
-//         #[cfg(feature = "embed_params")]
-//         l.read_sapling_params();
+        #[cfg(feature = "embed_params")]
+        l.read_sapling_params();
 
-//         info!("Created new wallet!");
-//         info!("Created LightClient to {}", &config.server);
+        info!("Created new wallet!");
+        info!("Created LightClient to {}", &config.server);
 
-//         // Save
-//         l.do_save().map_err(|s| io::Error::new(ErrorKind::PermissionDenied, s))?;
+        // Save
+        l.do_save().map_err(|s| io::Error::new(ErrorKind::PermissionDenied, s))?;
 
-//         Ok(l)
-//     }
+        Ok(l)
+    }
 
-//     pub fn read_from_buffer<R: Read>(config: &LightClientConfig, mut reader: R) -> io::Result<Self>{
-//         let wallet = LightWallet::read(&mut reader, config)?;
-//         let mut lc = LightClient {
-//             wallet          : Arc::new(RwLock::new(wallet)),
-//             config          : config.clone(),
-//             sapling_output  : vec![], 
-//             sapling_spend   : vec![],
-//             sync_lock       : Mutex::new(()),
-//             sync_status     : Arc::new(RwLock::new(WalletStatus::new())),
-//         };
+    pub fn read_from_buffer<R: Read>(config: &LightClientConfig, mut reader: R) -> io::Result<Self>{
+        let wallet = LightWallet::read(&mut reader, config)?;
+        let mut lc = LightClient {
+            wallet          : Arc::new(RwLock::new(wallet)),
+            config          : config.clone(),
+            sapling_output  : vec![], 
+            sapling_spend   : vec![],
+            sync_lock       : Mutex::new(()),
+            sync_status     : Arc::new(RwLock::new(WalletStatus::new())),
+        };
 
-//         #[cfg(feature = "embed_params")]
-//         lc.read_sapling_params();
+        #[cfg(feature = "embed_params")]
+        lc.read_sapling_params();
 
-//         info!("Read wallet with birthday {}", lc.wallet.read().unwrap().get_first_tx_block());
-//         info!("Created LightClient to {}", &config.server);
+        info!("Read wallet with birthday {}", lc.wallet.read().unwrap().get_first_tx_block());
+        info!("Created LightClient to {}", &config.server);
 
-//         Ok(lc)
-//     }
+        Ok(lc)
+    }
 
-//     pub fn read_from_disk(config: &LightClientConfig) -> io::Result<Self> {
-//         if !config.wallet_exists() {
-//             return Err(Error::new(ErrorKind::AlreadyExists,
-//                     format!("Cannot read wallet. No file at {}", config.get_wallet_path().display())));
-//         }
+    pub fn read_from_disk(config: &LightClientConfig) -> io::Result<Self> {
+        if !config.wallet_exists() {
+            return Err(Error::new(ErrorKind::AlreadyExists,
+                    format!("Cannot read wallet. No file at {}", config.get_wallet_path().display())));
+        }
 
-//         let mut file_buffer = BufReader::new(File::open(config.get_wallet_path())?);
+        let mut file_buffer = BufReader::new(File::open(config.get_wallet_path())?);
             
-//         let wallet = LightWallet::read(&mut file_buffer, config)?;
-//         let mut lc = LightClient {
-//             wallet          : Arc::new(RwLock::new(wallet)),
-//             config          : config.clone(),
-//             sapling_output  : vec![], 
-//             sapling_spend   : vec![],
-//             sync_lock       : Mutex::new(()),
-//             sync_status     : Arc::new(RwLock::new(WalletStatus::new())),
-//         };
+        let wallet = LightWallet::read(&mut file_buffer, config)?;
+        let mut lc = LightClient {
+            wallet          : Arc::new(RwLock::new(wallet)),
+            config          : config.clone(),
+            sapling_output  : vec![], 
+            sapling_spend   : vec![],
+            sync_lock       : Mutex::new(()),
+            sync_status     : Arc::new(RwLock::new(WalletStatus::new())),
+        };
 
-//         #[cfg(feature = "embed_params")]
-//         lc.read_sapling_params();
+        #[cfg(feature = "embed_params")]
+        lc.read_sapling_params();
 
-//         info!("Read wallet with birthday {}", lc.wallet.read().unwrap().get_first_tx_block());
-//         info!("Created LightClient to {}", &config.server);
+        info!("Read wallet with birthday {}", lc.wallet.read().unwrap().get_first_tx_block());
+        info!("Created LightClient to {}", &config.server);
 
-//         Ok(lc)
-//     }
+        Ok(lc)
+    }
 
-//     // pub fn init_logging(&self) -> io::Result<()> {
-//     //     // Configure logging first.
-//     //     let log_config = self.config.get_log_config()?;
-//     //     log4rs::init_config(log_config).map_err(|e| {
-//     //         std::io::Error::new(ErrorKind::Other, e)
-//     //     })?;
+    // pub fn init_logging(&self) -> io::Result<()> {
+    //     // Configure logging first.
+    //     let log_config = self.config.get_log_config()?;
+    //     log4rs::init_config(log_config).map_err(|e| {
+    //         std::io::Error::new(ErrorKind::Other, e)
+    //     })?;
 
-//     //     Ok(())
-//     // }
+    //     Ok(())
+    // }
 
-//     pub fn attempt_recover_seed(config: &LightClientConfig, password: Option<String>) -> Result<String, String> {
-//         use std::io::prelude::*;
-//         use byteorder::{LittleEndian, ReadBytesExt};
-//         use libflate::gzip::Decoder;
-//         use bip39::{Mnemonic, Language};
-//         use zcash_primitives::serialize::Vector;
+    pub fn attempt_recover_seed(config: &LightClientConfig, password: Option<String>) -> Result<String, String> {
+        use std::io::prelude::*;
+        use byteorder::{LittleEndian, ReadBytesExt};
+        use libflate::gzip::Decoder;
+        use bip39::{Mnemonic, Language};
+        use zcash_primitives::serialize::Vector;
 
-//         let mut inp = BufReader::new(File::open(config.get_wallet_path()).unwrap());
-//         let version = inp.read_u64::<LittleEndian>().unwrap();
-//         println!("Reading wallet version {}", version);
+        let mut inp = BufReader::new(File::open(config.get_wallet_path()).unwrap());
+        let version = inp.read_u64::<LittleEndian>().unwrap();
+        println!("Reading wallet version {}", version);
 
-//         // At version 5, we're writing the rest of the file as a compressed stream (gzip)
-//         let mut reader: Box<dyn Read> = if version != 5 {
-//             Box::new(inp)
-//         } else {
-//             Box::new(Decoder::new(inp).unwrap())
-//         };
+        // At version 5, we're writing the rest of the file as a compressed stream (gzip)
+        let mut reader: Box<dyn Read> = if version != 5 {
+            Box::new(inp)
+        } else {
+            Box::new(Decoder::new(inp).unwrap())
+        };
 
-//         let encrypted = if version >= 4 {
-//             reader.read_u8().unwrap() > 0
-//         } else {
-//             false
-//         };
+        let encrypted = if version >= 4 {
+            reader.read_u8().unwrap() > 0
+        } else {
+            false
+        };
 
-//         if encrypted && password.is_none() {
-//             return Err("The wallet is encrypted and a password was not specified. Please specify the password with '--password'!".to_string());
-//         }
+        if encrypted && password.is_none() {
+            return Err("The wallet is encrypted and a password was not specified. Please specify the password with '--password'!".to_string());
+        }
 
-//         let mut enc_seed = [0u8; 48];
-//         if version >= 4 {
-//             reader.read_exact(&mut enc_seed).unwrap();
-//         }
+        let mut enc_seed = [0u8; 48];
+        if version >= 4 {
+            reader.read_exact(&mut enc_seed).unwrap();
+        }
 
-//         let nonce = if version >= 4 {
-//             Vector::read(&mut reader, |r| r.read_u8()).unwrap()
-//         } else {
-//             vec![]
-//         };
+        let nonce = if version >= 4 {
+            Vector::read(&mut reader, |r| r.read_u8()).unwrap()
+        } else {
+            vec![]
+        };
 
-//         let phrase = if encrypted {
-//             use crate::fakeoxide::crypto::secretbox;
-//             use crate::lightwallet::double_sha256;
+        let phrase = if encrypted {
+            use crate::fakeoxide::crypto::secretbox;
+            use crate::lightwallet::double_sha256;
 
-//             // Get the doublesha256 of the password, which is the right length
-//             let key = secretbox::Key::from_slice(&double_sha256(password.unwrap().as_bytes())).unwrap();
-//             let nonce = secretbox::Nonce::from_slice(&nonce).unwrap();
+            // Get the doublesha256 of the password, which is the right length
+            let key = secretbox::Key::from_slice(&double_sha256(password.unwrap().as_bytes())).unwrap();
+            let nonce = secretbox::Nonce::from_slice(&nonce).unwrap();
 
-//             let seed = match secretbox::open(&enc_seed, &nonce, &key) {
-//                 Ok(s) => s,
-//                 Err(_) => return Err("Decryption failed. Is your password correct?".to_string())
-//             };
+            let seed = match secretbox::open(&enc_seed, &nonce, &key) {
+                Ok(s) => s,
+                Err(_) => return Err("Decryption failed. Is your password correct?".to_string())
+            };
             
-//             Mnemonic::from_entropy(&seed, Language::English)
-//         } else {
-//             // Seed
-//             let mut seed_bytes = [0u8; 32];
-//             reader.read_exact(&mut seed_bytes).unwrap();
+            Mnemonic::from_entropy(&seed, Language::English)
+        } else {
+            // Seed
+            let mut seed_bytes = [0u8; 32];
+            reader.read_exact(&mut seed_bytes).unwrap();
 
-//             Mnemonic::from_entropy(&seed_bytes, Language::English) 
-//         }.map_err(|e| format!("Failed to read seed. {:?}", e));
+            Mnemonic::from_entropy(&seed_bytes, Language::English) 
+        }.map_err(|e| format!("Failed to read seed. {:?}", e));
         
-//         phrase.map(|m| m.phrase().to_string())
-//     }
+        phrase.map(|m| m.phrase().to_string())
+    }
 
 
-//     pub fn last_scanned_height(&self) -> u64 {
-//         self.wallet.read().unwrap().last_scanned_height() as u64
-//     }
+    pub fn last_scanned_height(&self) -> u64 {
+        self.wallet.read().unwrap().last_scanned_height() as u64
+    }
 
-//     // Export private keys
-//     pub fn do_export(&self, addr: Option<String>) -> Result<JsonValue, &str> {
-//         if !self.wallet.read().unwrap().is_unlocked_for_spending() {
-//             error!("Wallet is locked");
-//             return Err("Wallet is locked");
-//         }
+    // Export private keys
+    pub fn do_export(&self, addr: Option<String>) -> Result<JsonValue, &str> {
+        if !self.wallet.read().unwrap().is_unlocked_for_spending() {
+            error!("Wallet is locked");
+            return Err("Wallet is locked");
+        }
 
-//         // Clone address so it can be moved into the closure
-//         let address = addr.clone();
-//         let wallet = self.wallet.read().unwrap();
-//         // Go over all z addresses
-//         let z_keys = wallet.get_z_private_keys().iter()
-//             .filter( move |(addr, _, _)| address.is_none() || address.as_ref() == Some(addr))
-//             .map( |(addr, pk, vk)|
-//                 object!{
-//                     "address"     => addr.clone(),
-//                     "private_key" => pk.clone(),
-//                     "viewing_key" => vk.clone(),
-//                 }
-//             ).collect::<Vec<JsonValue>>();
+        // Clone address so it can be moved into the closure
+        let address = addr.clone();
+        let wallet = self.wallet.read().unwrap();
+        // Go over all z addresses
+        let z_keys = wallet.get_z_private_keys().iter()
+            .filter( move |(addr, _, _)| address.is_none() || address.as_ref() == Some(addr))
+            .map( |(addr, pk, vk)|
+                object!{
+                    "address"     => addr.clone(),
+                    "private_key" => pk.clone(),
+                    "viewing_key" => vk.clone(),
+                }
+            ).collect::<Vec<JsonValue>>();
 
-//         // Clone address so it can be moved into the closure
-//         let address = addr.clone();
+        // Clone address so it can be moved into the closure
+        let address = addr.clone();
 
-//         // Go over all t addresses
-//         let t_keys = wallet.get_t_secret_keys().iter()
-//             .filter( move |(addr, _)| address.is_none() || address.as_ref() == Some(addr))
-//             .map( |(addr, sk)|
-//                 object!{
-//                     "address"     => addr.clone(),
-//                     "private_key" => sk.clone(),
-//                 }
-//             ).collect::<Vec<JsonValue>>();
+        // Go over all t addresses
+        let t_keys = wallet.get_t_secret_keys().iter()
+            .filter( move |(addr, _)| address.is_none() || address.as_ref() == Some(addr))
+            .map( |(addr, sk)|
+                object!{
+                    "address"     => addr.clone(),
+                    "private_key" => sk.clone(),
+                }
+            ).collect::<Vec<JsonValue>>();
 
-//         let mut all_keys = vec![];
-//         all_keys.extend_from_slice(&z_keys);
-//         all_keys.extend_from_slice(&t_keys);
+        let mut all_keys = vec![];
+        all_keys.extend_from_slice(&z_keys);
+        all_keys.extend_from_slice(&t_keys);
 
-//         Ok(all_keys.into())
-//     }
+        Ok(all_keys.into())
+    }
 
-//     pub fn do_address(&self) -> JsonValue {
-//         let wallet = self.wallet.read().unwrap();
+    pub fn do_address(&self) -> JsonValue {
+        let wallet = self.wallet.read().unwrap();
 
-//         // Collect z addresses
-//         let z_addresses = wallet.get_all_zaddresses();
+        // Collect z addresses
+        let z_addresses = wallet.get_all_zaddresses();
 
-//         // Collect t addresses
-//         let t_addresses = wallet.taddresses.read().unwrap().iter().map( |a| a.clone() )
-//                             .collect::<Vec<String>>();
+        // Collect t addresses
+        let t_addresses = wallet.taddresses.read().unwrap().iter().map( |a| a.clone() )
+                            .collect::<Vec<String>>();
 
-//         object!{
-//             "z_addresses" => z_addresses,
-//             "t_addresses" => t_addresses,
-//         }
-//     }
+        object!{
+            "z_addresses" => z_addresses,
+            "t_addresses" => t_addresses,
+        }
+    }
 
-//     pub fn do_balance(&self) -> JsonValue {
-//         let wallet = self.wallet.read().unwrap();
+    pub fn do_balance(&self) -> JsonValue {
+        let wallet = self.wallet.read().unwrap();
 
-//         // Collect z addresses
-//         let z_addresses = wallet.get_all_zaddresses().iter().map(|zaddress| {
-//             object!{
-//                 "address" => zaddress.clone(),
-//                 "zbalance" => wallet.zbalance(Some(zaddress.clone())),
-//                 "verified_zbalance"  => wallet.verified_zbalance(Some(zaddress.clone())),
-//                 "spendable_zbalance" => wallet.spendable_zbalance(Some(zaddress.clone())),
-//                 "unverified_zbalance"   => wallet.unverified_zbalance(Some(zaddress.clone()))
-//             }
-//         }).collect::<Vec<JsonValue>>();
+        // Collect z addresses
+        let z_addresses = wallet.get_all_zaddresses().iter().map(|zaddress| {
+            object!{
+                "address" => zaddress.clone(),
+                "zbalance" => wallet.zbalance(Some(zaddress.clone())),
+                "verified_zbalance"  => wallet.verified_zbalance(Some(zaddress.clone())),
+                "spendable_zbalance" => wallet.spendable_zbalance(Some(zaddress.clone())),
+                "unverified_zbalance"   => wallet.unverified_zbalance(Some(zaddress.clone()))
+            }
+        }).collect::<Vec<JsonValue>>();
 
-//         // Collect t addresses
-//         let t_addresses = wallet.taddresses.read().unwrap().iter().map( |address| {
-//             // Get the balance for this address
-//             let balance = wallet.tbalance(Some(address.clone()));
+        // Collect t addresses
+        let t_addresses = wallet.taddresses.read().unwrap().iter().map( |address| {
+            // Get the balance for this address
+            let balance = wallet.tbalance(Some(address.clone()));
             
-//             object!{
-//                 "address" => address.clone(),
-//                 "balance" => balance,
-//             }
-//         }).collect::<Vec<JsonValue>>();
+            object!{
+                "address" => address.clone(),
+                "balance" => balance,
+            }
+        }).collect::<Vec<JsonValue>>();
 
-//         object!{
-//             "zbalance"           => wallet.zbalance(None),
-//             "verified_zbalance"  => wallet.verified_zbalance(None),
-//             "spendable_zbalance" => wallet.spendable_zbalance(None),
-//             "unverified_zbalance"   => wallet.unverified_zbalance(None),
-//             "tbalance"           => wallet.tbalance(None),
-//             "z_addresses"        => z_addresses,
-//             "t_addresses"        => t_addresses,
-//         }
-//     }
+        object!{
+            "zbalance"           => wallet.zbalance(None),
+            "verified_zbalance"  => wallet.verified_zbalance(None),
+            "spendable_zbalance" => wallet.spendable_zbalance(None),
+            "unverified_zbalance"   => wallet.unverified_zbalance(None),
+            "tbalance"           => wallet.tbalance(None),
+            "z_addresses"        => z_addresses,
+            "t_addresses"        => t_addresses,
+        }
+    }
 
-//     pub fn do_save(&self) -> Result<(), String> {        
-//         // On mobile platforms, disable the save, because the saves will be handled by the native layer, and not in rust
-//         if cfg!(all(not(target_os="ios"), not(target_os="android"))) { 
-//             // If the wallet is encrypted but unlocked, lock it again.
-//             {
-//                 let mut wallet = self.wallet.write().unwrap();
-//                 if wallet.is_encrypted() && wallet.is_unlocked_for_spending() {
-//                     match wallet.lock() {
-//                         Ok(_) => {},
-//                         Err(e) => {
-//                             let err = format!("ERR: {}", e);
-//                             error!("{}", err);
-//                             return Err(e.to_string());
-//                         }
-//                     }
-//                 }
-//             }        
+    pub fn do_save(&self) -> Result<(), String> {        
+        // On mobile platforms, disable the save, because the saves will be handled by the native layer, and not in rust
+        if cfg!(all(not(target_os="ios"), not(target_os="android"))) { 
+            // If the wallet is encrypted but unlocked, lock it again.
+            {
+                let mut wallet = self.wallet.write().unwrap();
+                if wallet.is_encrypted() && wallet.is_unlocked_for_spending() {
+                    match wallet.lock() {
+                        Ok(_) => {},
+                        Err(e) => {
+                            let err = format!("ERR: {}", e);
+                            error!("{}", err);
+                            return Err(e.to_string());
+                        }
+                    }
+                }
+            }        
 
-//             {
-//                 // Prevent any overlapping syncs during save, and don't save in the middle of a sync
-//                 let _lock = self.sync_lock.lock().unwrap();
+            {
+                // Prevent any overlapping syncs during save, and don't save in the middle of a sync
+                let _lock = self.sync_lock.lock().unwrap();
 
-//                 let wallet = self.wallet.write().unwrap();
+                let wallet = self.wallet.write().unwrap();
 
-//                 let mut wallet_bytes = vec![];
-//                 match wallet.write(&mut wallet_bytes) {
-//                     Ok(_) => {
-//                         let mut file = File::create(self.config.get_wallet_path()).unwrap();
-//                         file.write_all(&wallet_bytes).map_err(|e| format!("{}", e))?;
-//                         Ok(())
-//                     }, 
-//                     Err(e) => {
-//                         let err = format!("ERR: {}", e);
-//                         error!("{}", err);
-//                         Err(e.to_string())
-//                     }
-//                 }
-//             }
-//         } else {
-//             // On ios and android just return OK
-//             Ok(())
-//         }
-//     }
+                let mut wallet_bytes = vec![];
+                match wallet.write(&mut wallet_bytes) {
+                    Ok(_) => {
+                        let mut file = File::create(self.config.get_wallet_path()).unwrap();
+                        file.write_all(&wallet_bytes).map_err(|e| format!("{}", e))?;
+                        Ok(())
+                    }, 
+                    Err(e) => {
+                        let err = format!("ERR: {}", e);
+                        error!("{}", err);
+                        Err(e.to_string())
+                    }
+                }
+            }
+        } else {
+            // On ios and android just return OK
+            Ok(())
+        }
+    }
 
 
-//     pub fn do_save_to_buffer(&self) -> Result<Vec<u8>, String> {
-//         // If the wallet is encrypted but unlocked, lock it again.
-//         {
-//            let mut wallet = self.wallet.write().unwrap();
-//            if wallet.is_encrypted() && wallet.is_unlocked_for_spending() {
-//                match wallet.lock() {
-//                    Ok(_) => {},
-//                    Err(e) => {
-//                        let err = format!("ERR: {}", e);
-//                        error!("{}", err);
-//                        return Err(e.to_string());
-//                    }
-//                }
-//            }
-//        }
+    pub fn do_save_to_buffer(&self) -> Result<Vec<u8>, String> {
+        // If the wallet is encrypted but unlocked, lock it again.
+        {
+           let mut wallet = self.wallet.write().unwrap();
+           if wallet.is_encrypted() && wallet.is_unlocked_for_spending() {
+               match wallet.lock() {
+                   Ok(_) => {},
+                   Err(e) => {
+                       let err = format!("ERR: {}", e);
+                       error!("{}", err);
+                       return Err(e.to_string());
+                   }
+               }
+           }
+       }
 
-//        let mut buffer: Vec<u8> = vec![];
-//        match self.wallet.write().unwrap().write(&mut buffer) {
-//            Ok(_) => Ok(buffer),
-//            Err(e) => {
-//                let err = format!("ERR: {}", e);
-//                error!("{}", err);
-//                Err(e.to_string())
-//            }
-//        }
-//    }
+       let mut buffer: Vec<u8> = vec![];
+       match self.wallet.write().unwrap().write(&mut buffer) {
+           Ok(_) => Ok(buffer),
+           Err(e) => {
+               let err = format!("ERR: {}", e);
+               error!("{}", err);
+               Err(e.to_string())
+           }
+       }
+   }
 
     pub fn get_server_uri(&self) -> http::Uri {
         self.config.server.clone()
     }
 
-//     pub fn do_zec_price(&self) -> String {
-//         let mut price_info = self.wallet.read().unwrap().price_info.read().unwrap().clone();
+    // pub fn do_zec_price(&self) -> String {
+    //     let mut price_info = self.wallet.read().unwrap().price_info.read().unwrap().clone();
         
-//         // If there is no price, try to fetch it first.
-//         if price_info.zec_price.is_none() {
-//             self.update_current_price();
-//             price_info = self.wallet.read().unwrap().price_info.read().unwrap().clone();
-//         }
+    //     // If there is no price, try to fetch it first.
+    //     if price_info.zec_price.is_none() {
+    //         self.update_current_price();
+    //         price_info = self.wallet.read().unwrap().price_info.read().unwrap().clone();
+    //     }
          
-//         match price_info.zec_price {
-//             None => return "Error: No price".to_string(),
-//             Some((ts, p)) => {
-//                 let o = object! {
-//                     "zec_price" => p,
-//                     "fetched_at" =>  ts,
-//                     "currency" => price_info.currency
-//                 };
+    //     match price_info.zec_price {
+    //         None => return "Error: No price".to_string(),
+    //         Some((ts, p)) => {
+    //             let o = object! {
+    //                 "zec_price" => p,
+    //                 "fetched_at" =>  ts,
+    //                 "currency" => price_info.currency
+    //             };
 
-//                 o.pretty(2)
-//             }
-//         }
-//     }
+    //             o.pretty(2)
+    //         }
+    //     }
+    // }
 
-//     pub fn do_info(&self) -> String {
-//         match get_info(&self.get_server_uri()) {
-//             Ok(i) => {
-//                 let o = object!{
-//                     "version" => i.version,
-//                     "git_commit" => i.git_commit,
-//                     "server_uri" => self.get_server_uri().to_string(),
-//                     "vendor" => i.vendor,
-//                     "taddr_support" => i.taddr_support,
-//                     "chain_name" => i.chain_name,
-//                     "sapling_activation_height" => i.sapling_activation_height,
-//                     "consensus_branch_id" => i.consensus_branch_id,
-//                     "latest_block_height" => i.block_height
-//                 };
-//                 o.pretty(2)
-//             },
-//             Err(e) => e
-//         }
-//     }
+    // // @see https://github.com/little-slingshot/zecwallet-light-cli-forum/issues/97
+    // pub fn do_info(&self) -> String {
+    //     match get_info(&self.get_server_uri()) {
+    //         Ok(i) => {
+    //             let o = object!{
+    //                 "version" => i.version,
+    //                 "git_commit" => i.git_commit,
+    //                 "server_uri" => self.get_server_uri().to_string(),
+    //                 "vendor" => i.vendor,
+    //                 "taddr_support" => i.taddr_support,
+    //                 "chain_name" => i.chain_name,
+    //                 "sapling_activation_height" => i.sapling_activation_height,
+    //                 "consensus_branch_id" => i.consensus_branch_id,
+    //                 "latest_block_height" => i.block_height
+    //             };
+    //             o.pretty(2)
+    //         },
+    //         Err(e) => e
+    //     }
+    // }
 
-//     pub fn do_send_progress(&self) -> Result<JsonValue, String> {
-//         let progress = self.wallet.read().unwrap().get_send_progress();
+    pub fn do_send_progress(&self) -> Result<JsonValue, String> {
+        let progress = self.wallet.read().unwrap().get_send_progress();
 
-//         Ok(object! {
-//             "id" => progress.id,
-//             "sending" => progress.is_send_in_progress,
-//             "progress" => progress.progress,
-//             "total" => progress.total,
-//             "txid" => progress.last_txid,
-//             "error" => progress.last_error,
-//         })
-//     }
+        Ok(object! {
+            "id" => progress.id,
+            "sending" => progress.is_send_in_progress,
+            "progress" => progress.progress,
+            "total" => progress.total,
+            "txid" => progress.last_txid,
+            "error" => progress.last_error,
+        })
+    }
 
-//     pub fn do_seed_phrase(&self) -> Result<JsonValue, &str> {
-//         if !self.wallet.read().unwrap().is_unlocked_for_spending() {
-//             error!("Wallet is locked");
-//             return Err("Wallet is locked");
-//         }
+    pub fn do_seed_phrase(&self) -> Result<JsonValue, &str> {
+        if !self.wallet.read().unwrap().is_unlocked_for_spending() {
+            error!("Wallet is locked");
+            return Err("Wallet is locked");
+        }
 
-//         let wallet = self.wallet.read().unwrap();
-//         Ok(object!{
-//             "seed"     => wallet.get_seed_phrase(),
-//             "birthday" => wallet.get_birthday()
-//         })
-//     }
+        let wallet = self.wallet.read().unwrap();
+        Ok(object!{
+            "seed"     => wallet.get_seed_phrase(),
+            "birthday" => wallet.get_birthday()
+        })
+    }
 
 //     // Return a list of all notes, spent and unspent
 //     pub fn do_list_notes(&self, all_notes: bool) -> JsonValue {
@@ -1028,293 +1029,293 @@ impl LightClient {
 //         res
 //     }
 
-//     pub fn do_encrypt_message(&self, to_address_str: String, memo: Memo) -> JsonValue {
-//         let to = match decode_payment_address(self.config.hrp_sapling_address(), &to_address_str) {
-//             Ok(Some(to)) => to,
-//             _ => {
-//                 return object! {"error" => format!("Couldn't parse {} as a z-address", to_address_str) };
-//             }
-//         };
+    pub fn do_encrypt_message(&self, to_address_str: String, memo: Memo) -> JsonValue {
+        let to = match decode_payment_address(self.config.hrp_sapling_address(), &to_address_str) {
+            Ok(Some(to)) => to,
+            _ => {
+                return object! {"error" => format!("Couldn't parse {} as a z-address", to_address_str) };
+            }
+        };
 
-//         match Message::new(to, memo).encrypt() {
-//             Ok(v) => {
-//                 object! {"encrypted_base64" => base64::encode(v) }
-//             },
-//             Err(e) => {
-//                 object! {"error" => format!("Couldn't encrypt. Error was {}", e)}
-//             }
-//         }
-//     }
+        match Message::new(to, memo).encrypt() {
+            Ok(v) => {
+                object! {"encrypted_base64" => base64::encode(v) }
+            },
+            Err(e) => {
+                object! {"error" => format!("Couldn't encrypt. Error was {}", e)}
+            }
+        }
+    }
 
-//     pub fn do_decrypt_message(&self, enc_base64: String) -> JsonValue {
-//         let wallet = self.wallet.read().unwrap();
+    pub fn do_decrypt_message(&self, enc_base64: String) -> JsonValue {
+        let wallet = self.wallet.read().unwrap();
 
-//         let data = match base64::decode(enc_base64) {
-//             Ok(v) => v,
-//             Err(e) => {
-//                 return  object! {"error" => format!("Couldn't decode base64. Error was {}", e)}
-//             }
-//         };
+        let data = match base64::decode(enc_base64) {
+            Ok(v) => v,
+            Err(e) => {
+                return  object! {"error" => format!("Couldn't decode base64. Error was {}", e)}
+            }
+        };
 
-//         match wallet.decrypt_message(data) {
-//             Some(m) => object! { 
-//                 "to" => encode_payment_address(self.config.hrp_sapling_address(), &m.to),
-//                 "memo" => LightWallet::memo_str(Some(m.memo.clone())),
-//                 "memohex" => hex::encode(m.memo.as_bytes())
-//             },
-//             None => object! { "error" => "Couldn't decrypt with any of the wallet's keys"}
-//         }
-//     }
+        match wallet.decrypt_message(data) {
+            Some(m) => object! { 
+                "to" => encode_payment_address(self.config.hrp_sapling_address(), &m.to),
+                "memo" => LightWallet::memo_str(Some(m.memo.clone())),
+                "memohex" => hex::encode(m.memo.as_bytes())
+            },
+            None => object! { "error" => "Couldn't decrypt with any of the wallet's keys"}
+        }
+    }
 
-//     pub fn do_encryption_status(&self) -> JsonValue {
-//         let wallet = self.wallet.read().unwrap();
-//         object!{
-//             "encrypted" => wallet.is_encrypted(),
-//             "locked"    => !wallet.is_unlocked_for_spending()
-//         }
-//     }
+    pub fn do_encryption_status(&self) -> JsonValue {
+        let wallet = self.wallet.read().unwrap();
+        object!{
+            "encrypted" => wallet.is_encrypted(),
+            "locked"    => !wallet.is_unlocked_for_spending()
+        }
+    }
 
-//     pub fn do_list_transactions(&self, include_memo_hex: bool) -> JsonValue {
-//         let wallet = self.wallet.read().unwrap();
+    pub fn do_list_transactions(&self, include_memo_hex: bool) -> JsonValue {
+        let wallet = self.wallet.read().unwrap();
 
-//         // Create a list of TransactionItems from wallet txns
-//         let mut tx_list = wallet.txs.read().unwrap().iter()
-//             .flat_map(| (_k, v) | {
-//                 let mut txns: Vec<JsonValue> = vec![];
+        // Create a list of TransactionItems from wallet txns
+        let mut tx_list = wallet.txs.read().unwrap().iter()
+            .flat_map(| (_k, v) | {
+                let mut txns: Vec<JsonValue> = vec![];
 
-//                 if v.total_shielded_value_spent + v.total_transparent_value_spent > 0 {
-//                     // If money was spent, create a transaction. For this, we'll subtract
-//                     // all the change notes. TODO: Add transparent change here to subtract it also
-//                     let total_change: u64 = v.notes.iter()
-//                         .filter( |nd| nd.is_change )
-//                         .map( |nd| nd.note.value )
-//                         .sum();
+                if v.total_shielded_value_spent + v.total_transparent_value_spent > 0 {
+                    // If money was spent, create a transaction. For this, we'll subtract
+                    // all the change notes. TODO: Add transparent change here to subtract it also
+                    let total_change: u64 = v.notes.iter()
+                        .filter( |nd| nd.is_change )
+                        .map( |nd| nd.note.value )
+                        .sum();
 
-//                     // TODO: What happens if change is > than sent ?
+                    // TODO: What happens if change is > than sent ?
 
-//                     // Collect outgoing metadata
-//                     let outgoing_json = v.outgoing_metadata.iter()
-//                         .map(|om| {
-//                             let mut o = object!{
-//                                 "address" => om.address.clone(),
-//                                 "value"   => om.value,
-//                                 "memo"    => LightWallet::memo_str(Some(om.memo.clone()))
-//                             };
+                    // Collect outgoing metadata
+                    let outgoing_json = v.outgoing_metadata.iter()
+                        .map(|om| {
+                            let mut o = object!{
+                                "address" => om.address.clone(),
+                                "value"   => om.value,
+                                "memo"    => LightWallet::memo_str(Some(om.memo.clone()))
+                            };
 
-//                             if include_memo_hex {
-//                                 o.insert("memohex", hex::encode(om.memo.as_bytes())).unwrap();
-//                             }
+                            if include_memo_hex {
+                                o.insert("memohex", hex::encode(om.memo.as_bytes())).unwrap();
+                            }
                             
-//                             return o;
-//                         })
-//                         .collect::<Vec<JsonValue>>();                    
+                            return o;
+                        })
+                        .collect::<Vec<JsonValue>>();                    
 
-//                     txns.push(object! {
-//                         "block_height" => v.block,
-//                         "datetime"     => v.datetime,
-//                         "txid"         => format!("{}", v.txid),
-//                         "zec_price"    => v.zec_price,
-//                         "amount"       => total_change as i64 
-//                                             - v.total_shielded_value_spent as i64 
-//                                             - v.total_transparent_value_spent as i64,
-//                         "outgoing_metadata" => outgoing_json,
-//                     });
-//                 } 
+                    txns.push(object! {
+                        "block_height" => v.block,
+                        "datetime"     => v.datetime,
+                        "txid"         => format!("{}", v.txid),
+                        "zec_price"    => v.zec_price,
+                        "amount"       => total_change as i64 
+                                            - v.total_shielded_value_spent as i64 
+                                            - v.total_transparent_value_spent as i64,
+                        "outgoing_metadata" => outgoing_json,
+                    });
+                } 
 
-//                 // For each sapling note that is not a change, add a Tx.
-//                 txns.extend(v.notes.iter()
-//                     .filter( |nd| !nd.is_change )
-//                     .enumerate()
-//                     .map ( |(i, nd)| {
-//                         let mut o = object! {
-//                             "block_height" => v.block,
-//                             "datetime"     => v.datetime,
-//                             "position"     => i,
-//                             "txid"         => format!("{}", v.txid),
-//                             "zec_price"    => v.zec_price,
-//                             "amount"       => nd.note.value as i64,
-//                             "address"      => LightWallet::note_address(self.config.hrp_sapling_address(), nd),
-//                             "memo"         => LightWallet::memo_str(nd.memo.clone())
-//                         };
+                // For each sapling note that is not a change, add a Tx.
+                txns.extend(v.notes.iter()
+                    .filter( |nd| !nd.is_change )
+                    .enumerate()
+                    .map ( |(i, nd)| {
+                        let mut o = object! {
+                            "block_height" => v.block,
+                            "datetime"     => v.datetime,
+                            "position"     => i,
+                            "txid"         => format!("{}", v.txid),
+                            "zec_price"    => v.zec_price,
+                            "amount"       => nd.note.value as i64,
+                            "address"      => LightWallet::note_address(self.config.hrp_sapling_address(), nd),
+                            "memo"         => LightWallet::memo_str(nd.memo.clone())
+                        };
 
-//                         if include_memo_hex {
-//                             o.insert("memohex", match &nd.memo {
-//                                 Some(m) => hex::encode(m.as_bytes()),
-//                                 _ => "".to_string(),
-//                             }).unwrap();
-//                         }
+                        if include_memo_hex {
+                            o.insert("memohex", match &nd.memo {
+                                Some(m) => hex::encode(m.as_bytes()),
+                                _ => "".to_string(),
+                            }).unwrap();
+                        }
 
-//                         return o;
-//                     })
-//                 );
+                        return o;
+                    })
+                );
 
-//                 // Get the total transparent received
-//                 let total_transparent_received = v.utxos.iter().map(|u| u.value).sum::<u64>();
-//                 if total_transparent_received > v.total_transparent_value_spent {
-//                     // Create an input transaction for the transparent value as well.
-//                     txns.push(object!{
-//                         "block_height" => v.block,
-//                         "datetime"     => v.datetime,
-//                         "txid"         => format!("{}", v.txid),
-//                         "zec_price"    => v.zec_price,
-//                         "amount"       => total_transparent_received as i64 - v.total_transparent_value_spent as i64,
-//                         "address"      => v.utxos.iter().map(|u| u.address.clone()).collect::<Vec<String>>().join(","),
-//                         "memo"         => None::<String>
-//                     })
-//                 }
+                // Get the total transparent received
+                let total_transparent_received = v.utxos.iter().map(|u| u.value).sum::<u64>();
+                if total_transparent_received > v.total_transparent_value_spent {
+                    // Create an input transaction for the transparent value as well.
+                    txns.push(object!{
+                        "block_height" => v.block,
+                        "datetime"     => v.datetime,
+                        "txid"         => format!("{}", v.txid),
+                        "zec_price"    => v.zec_price,
+                        "amount"       => total_transparent_received as i64 - v.total_transparent_value_spent as i64,
+                        "address"      => v.utxos.iter().map(|u| u.address.clone()).collect::<Vec<String>>().join(","),
+                        "memo"         => None::<String>
+                    })
+                }
 
-//                 txns
-//             })
-//             .collect::<Vec<JsonValue>>();
+                txns
+            })
+            .collect::<Vec<JsonValue>>();
 
-//         // Add in all mempool txns
-//         tx_list.extend(wallet.mempool_txs.read().unwrap().iter().map( |(_, wtx)| {
-//             let amount: u64 = wtx.outgoing_metadata.iter().map(|om| om.value).sum::<u64>();
-//             let fee = fee::get_default_fee(wallet.last_scanned_height());
+        // Add in all mempool txns
+        tx_list.extend(wallet.mempool_txs.read().unwrap().iter().map( |(_, wtx)| {
+            let amount: u64 = wtx.outgoing_metadata.iter().map(|om| om.value).sum::<u64>();
+            let fee = fee::get_default_fee(wallet.last_scanned_height());
 
-//             // Collect outgoing metadata
-//             let outgoing_json = wtx.outgoing_metadata.iter()
-//                 .map(|om| {
-//                     let mut o = object!{
-//                         "address" => om.address.clone(),
-//                         "value"   => om.value,
-//                         "memo"    => LightWallet::memo_str(Some(om.memo.clone())),
-//                     };
+            // Collect outgoing metadata
+            let outgoing_json = wtx.outgoing_metadata.iter()
+                .map(|om| {
+                    let mut o = object!{
+                        "address" => om.address.clone(),
+                        "value"   => om.value,
+                        "memo"    => LightWallet::memo_str(Some(om.memo.clone())),
+                    };
 
-//                     if include_memo_hex {
-//                         o.insert("memohex", hex::encode(om.memo.as_bytes())).unwrap();
-//                     }
+                    if include_memo_hex {
+                        o.insert("memohex", hex::encode(om.memo.as_bytes())).unwrap();
+                    }
 
-//                     return o;
-//                 }).collect::<Vec<JsonValue>>();
+                    return o;
+                }).collect::<Vec<JsonValue>>();
 
-//             object! {
-//                 "block_height" => wtx.block,
-//                 "datetime"     => wtx.datetime,
-//                 "txid"         => format!("{}", wtx.txid),
-//                 "zec_price"    => wtx.zec_price,
-//                 "amount"       => -1 * (fee + amount) as i64,
-//                 "unconfirmed"  => true,
-//                 "outgoing_metadata" => outgoing_json,
-//             }
-//         }));
+            object! {
+                "block_height" => wtx.block,
+                "datetime"     => wtx.datetime,
+                "txid"         => format!("{}", wtx.txid),
+                "zec_price"    => wtx.zec_price,
+                "amount"       => -1 * (fee + amount) as i64,
+                "unconfirmed"  => true,
+                "outgoing_metadata" => outgoing_json,
+            }
+        }));
 
-//         tx_list.sort_by( |a, b| if a["block_height"] == b["block_height"] {
-//                                     a["txid"].as_str().cmp(&b["txid"].as_str())
-//                                 } else {
-//                                     a["block_height"].as_i32().cmp(&b["block_height"].as_i32())
-//                                 }
-//         );
+        tx_list.sort_by( |a, b| if a["block_height"] == b["block_height"] {
+                                    a["txid"].as_str().cmp(&b["txid"].as_str())
+                                } else {
+                                    a["block_height"].as_i32().cmp(&b["block_height"].as_i32())
+                                }
+        );
 
-//         JsonValue::Array(tx_list)
-//     }
+        JsonValue::Array(tx_list)
+    }
 
-//     /// Create a new address, deriving it from the seed.
-//     pub fn do_new_address(&self, addr_type: &str) -> Result<JsonValue, String> {
-//         if !self.wallet.read().unwrap().is_unlocked_for_spending() {
-//             error!("Wallet is locked");
-//             return Err("Wallet is locked".to_string());
-//         }
+    /// Create a new address, deriving it from the seed.
+    pub fn do_new_address(&self, addr_type: &str) -> Result<JsonValue, String> {
+        if !self.wallet.read().unwrap().is_unlocked_for_spending() {
+            error!("Wallet is locked");
+            return Err("Wallet is locked".to_string());
+        }
 
-//         let new_address = {
-//             let wallet = self.wallet.write().unwrap();
+        let new_address = {
+            let wallet = self.wallet.write().unwrap();
 
-//             let addr = match addr_type {
-//                 "z" => wallet.add_zaddr(),
-//                 "t" => wallet.add_taddr(),
-//                 _   => {
-//                     let e = format!("Unrecognized address type: {}", addr_type);
-//                     error!("{}", e);
-//                     return Err(e);
-//                 }
-//             };
+            let addr = match addr_type {
+                "z" => wallet.add_zaddr(),
+                "t" => wallet.add_taddr(),
+                _   => {
+                    let e = format!("Unrecognized address type: {}", addr_type);
+                    error!("{}", e);
+                    return Err(e);
+                }
+            };
 
-//             if addr.starts_with("Error") {
-//                 let e = format!("Error creating new address: {}", addr);
-//                     error!("{}", e);
-//                     return Err(e);
-//             }
+            if addr.starts_with("Error") {
+                let e = format!("Error creating new address: {}", addr);
+                    error!("{}", e);
+                    return Err(e);
+            }
 
-//             addr
-//         };
+            addr
+        };
 
-//         self.do_save()?;
+        self.do_save()?;
 
-//         Ok(array![new_address])
-//     }
+        Ok(array![new_address])
+    }
 
-//     /// Convinence function to determine what type of key this is and import it
-//     pub fn do_import_key(&self, key: String, birthday: u64) -> Result<JsonValue, String> {
-//         if key.starts_with(self.config.hrp_sapling_private_key()) {
-//             self.do_import_sk(key, birthday)
-//         } else if key.starts_with(self.config.hrp_sapling_viewing_key()) {
-//             self.do_import_vk(key, birthday)
-//         } else {
-//             Err(format!("'{}' was not recognized as either a spending key or a viewing key because it didn't start with either '{}' or '{}'", 
-//                 key, self.config.hrp_sapling_private_key(), self.config.hrp_sapling_viewing_key()))
-//         }
-//     }
+    /// Convinence function to determine what type of key this is and import it
+    pub fn do_import_key(&self, key: String, birthday: u64) -> Result<JsonValue, String> {
+        if key.starts_with(self.config.hrp_sapling_private_key()) {
+            self.do_import_sk(key, birthday)
+        } else if key.starts_with(self.config.hrp_sapling_viewing_key()) {
+            self.do_import_vk(key, birthday)
+        } else {
+            Err(format!("'{}' was not recognized as either a spending key or a viewing key because it didn't start with either '{}' or '{}'", 
+                key, self.config.hrp_sapling_private_key(), self.config.hrp_sapling_viewing_key()))
+        }
+    }
 
-//     /// Import a new private key
-//     pub fn do_import_sk(&self, sk: String, birthday: u64) -> Result<JsonValue, String> {
-//         if !self.wallet.read().unwrap().is_unlocked_for_spending() {
-//             error!("Wallet is locked");
-//             return Err("Wallet is locked".to_string());
-//         }
+    /// Import a new private key
+    pub fn do_import_sk(&self, sk: String, birthday: u64) -> Result<JsonValue, String> {
+        if !self.wallet.read().unwrap().is_unlocked_for_spending() {
+            error!("Wallet is locked");
+            return Err("Wallet is locked".to_string());
+        }
 
-//         let new_address = {
-//             let mut wallet = self.wallet.write().unwrap();
+        let new_address = {
+            let mut wallet = self.wallet.write().unwrap();
 
-//             let addr = wallet.add_imported_sk(sk, birthday);
-//             if addr.starts_with("Error") {
-//                 let e = format!("Error creating new address{}", addr);
-//                     error!("{}", e);
-//                     return Err(e);
-//             }
+            let addr = wallet.add_imported_sk(sk, birthday);
+            if addr.starts_with("Error") {
+                let e = format!("Error creating new address{}", addr);
+                    error!("{}", e);
+                    return Err(e);
+            }
 
-//             addr
-//         };
+            addr
+        };
 
-//         self.do_save()?;
+        self.do_save()?;
 
-//         Ok(array![new_address])
-//     }
+        Ok(array![new_address])
+    }
 
-//     /// Import a new viewing key
-//     pub fn do_import_vk(&self, vk: String, birthday: u64) -> Result<JsonValue, String> {
-//         if !self.wallet.read().unwrap().is_unlocked_for_spending() {
-//             error!("Wallet is locked");
-//             return Err("Wallet is locked".to_string());
-//         }
+    /// Import a new viewing key
+    pub fn do_import_vk(&self, vk: String, birthday: u64) -> Result<JsonValue, String> {
+        if !self.wallet.read().unwrap().is_unlocked_for_spending() {
+            error!("Wallet is locked");
+            return Err("Wallet is locked".to_string());
+        }
 
-//         let new_address = {
-//             let mut wallet = self.wallet.write().unwrap();
+        let new_address = {
+            let mut wallet = self.wallet.write().unwrap();
 
-//             let addr = wallet.add_imported_vk(vk, birthday);
-//             if addr.starts_with("Error") {
-//                 let e = format!("Error creating new address{}", addr);
-//                     error!("{}", e);
-//                     return Err(e);
-//             }
+            let addr = wallet.add_imported_vk(vk, birthday);
+            if addr.starts_with("Error") {
+                let e = format!("Error creating new address{}", addr);
+                    error!("{}", e);
+                    return Err(e);
+            }
 
-//             addr
-//         };
+            addr
+        };
 
-//         self.do_save()?;
+        self.do_save()?;
 
-//         Ok(array![new_address])
-//     }
+        Ok(array![new_address])
+    }
     
 
-//     pub fn clear_state(&self) {
-//         // First, clear the state from the wallet
-//         self.wallet.read().unwrap().clear_blocks();
+    pub fn clear_state(&self) {
+        // First, clear the state from the wallet
+        self.wallet.read().unwrap().clear_blocks();
 
-//         // Then set the initial block
-//         let birthday = self.wallet.read().unwrap().get_birthday();
-//         self.set_wallet_initial_state(birthday);
-//         info!("Cleared wallet state, with birthday at {}", birthday);
-//     }
+        // Then set the initial block
+        let birthday = self.wallet.read().unwrap().get_birthday();
+        self.set_wallet_initial_state(birthday);
+        info!("Cleared wallet state, with birthday at {}", birthday);
+    }
 
 //     pub fn do_rescan(&self) -> Result<JsonValue, String> {
 //         if !self.wallet.read().unwrap().is_unlocked_for_spending() {
@@ -1334,161 +1335,164 @@ impl LightClient {
 //         response
 //     }
 
-//     pub fn do_verify_from_last_checkpoint(&self) -> Result<bool, String> {
-//         // If there are no blocks in the wallet, then we are starting from scratch, so no need to verify anything.
-//         let last_height = self.wallet.read().unwrap().last_scanned_height() as u64;
-//         if last_height == self.config.sapling_activation_height -1 {
-//             info!("Reset the sapling tree verified to true. (Block height is at the begining ({}))", last_height);
-//             self.wallet.write().unwrap().set_sapling_tree_verified();
+    // // @see https://github.com/little-slingshot/zecwallet-light-cli-forum/issues/93
+    // pub fn do_verify_from_last_checkpoint(&self) -> Result<bool, String> {
+    //     // If there are no blocks in the wallet, then we are starting from scratch, so no need to verify anything.
+    //     let last_height = self.wallet.read().unwrap().last_scanned_height() as u64;
+    //     if last_height == self.config.sapling_activation_height -1 {
+    //         info!("Reset the sapling tree verified to true. (Block height is at the begining ({}))", last_height);
+    //         self.wallet.write().unwrap().set_sapling_tree_verified();
 
-//             return Ok(true);
-//         }
+    //         return Ok(true);
+    //     }
 
-//         // Get the first block's details, and make sure we can compute it from the last checkpoint
-//         // Note that we get the first block in the wallet (Not the last one). This is expected to be tip - 100 blocks.
-//         // We use this block to prevent any reorg risk. 
-//         let (end_height, _, end_tree) = match self.wallet.read().unwrap().get_wallet_sapling_tree(NodePosition::First) {
-//             Ok(r) => r,
-//             Err(e) => return Err(format!("No wallet block found: {}", e))
-//         };
+    //     // Get the first block's details, and make sure we can compute it from the last checkpoint
+    //     // Note that we get the first block in the wallet (Not the last one). This is expected to be tip - 100 blocks.
+    //     // We use this block to prevent any reorg risk. 
+    //     let (end_height, _, end_tree) = match self.wallet.read().unwrap().get_wallet_sapling_tree(NodePosition::First) {
+    //         Ok(r) => r,
+    //         Err(e) => return Err(format!("No wallet block found: {}", e))
+    //     };
 
-//         // Get the last checkpoint
-//         let (start_height, _, start_tree) = match checkpoints::get_closest_checkpoint(&self.config.chain_name, end_height as u64) {
-//             Some(r) => r,
-//             None => return Err(format!("No checkpoint found"))
-//         };
+    //     // Get the last checkpoint
+    //     let (start_height, _, start_tree) = match checkpoints::get_closest_checkpoint(&self.config.chain_name, end_height as u64) {
+    //         Some(r) => r,
+    //         None => return Err(format!("No checkpoint found"))
+    //     };
         
-//         // If the height is the same as the checkpoint, then just compare directly
-//         if end_height as u64 == start_height {
-//             let verified = end_tree == start_tree;
+    //     // If the height is the same as the checkpoint, then just compare directly
+    //     if end_height as u64 == start_height {
+    //         let verified = end_tree == start_tree;
             
-//             if verified {
-//                 info!("Reset the sapling tree verified to true");
-//                 self.wallet.write().unwrap().set_sapling_tree_verified();
-//             } else {
-//                 warn!("Sapling tree verification failed!");
-//                 warn!("Verification Results:\nCalculated\n{}\nExpected\n{}\n", start_tree, end_tree);
-//             }
+    //         if verified {
+    //             info!("Reset the sapling tree verified to true");
+    //             self.wallet.write().unwrap().set_sapling_tree_verified();
+    //         } else {
+    //             warn!("Sapling tree verification failed!");
+    //             warn!("Verification Results:\nCalculated\n{}\nExpected\n{}\n", start_tree, end_tree);
+    //         }
 
-//             return Ok(verified);
-//         }
+    //         return Ok(verified);
+    //     }
         
-//         let sapling_tree = hex::decode(start_tree).unwrap();
+    //     let sapling_tree = hex::decode(start_tree).unwrap();
 
-//         // The comupted commitment tree will be here.
-//         let commit_tree_computed = Arc::new(RwLock::new(CommitmentTree::read(&sapling_tree[..]).map_err(|e| format!("{}", e))?));
+    //     // The comupted commitment tree will be here.
+    //     let commit_tree_computed = Arc::new(RwLock::new(CommitmentTree::read(&sapling_tree[..]).map_err(|e| format!("{}", e))?));
 
-//         let pool = ThreadPool::new(2);
-//         let commit_tree = commit_tree_computed.clone();
-//         grpcconnector::fetch_blocks(&self.get_server_uri(), start_height+1, end_height as u64, pool, 
-//             move |encoded_block: &[u8], height: u64| {
-//                 let block: Result<zcash_client_backend::proto::compact_formats::CompactBlock, _>
-//                                         = protobuf::Message::parse_from_bytes(encoded_block);
-//                 if block.is_err() {
-//                     error!("Error getting block, {}", block.err().unwrap());
-//                     return;
-//                 }
+    //     let pool = ThreadPool::new(2);
+    //     let commit_tree = commit_tree_computed.clone();
+    //     grpcconnector::fetch_blocks(&self.get_server_uri(), start_height+1, end_height as u64, pool, 
+    //         move |encoded_block: &[u8], height: u64| {
+    //             let block: Result<zcash_client_backend::proto::compact_formats::CompactBlock, _>
+    //                                     = protobuf::Message::parse_from_bytes(encoded_block);
+    //             if block.is_err() {
+    //                 error!("Error getting block, {}", block.err().unwrap());
+    //                 return;
+    //             }
 
-//                 // Go over all tx, all outputs. No need to do any processing, just update the commitment tree
-//                 for tx in block.unwrap().vtx.iter() {
-//                     for so in tx.outputs.iter() {
-//                         let node = Node::new(so.cmu().ok().unwrap().into());
-//                         commit_tree.write().unwrap().append(node).unwrap();
-//                     }
-//                 }
+    //             // Go over all tx, all outputs. No need to do any processing, just update the commitment tree
+    //             for tx in block.unwrap().vtx.iter() {
+    //                 for so in tx.outputs.iter() {
+    //                     let node = Node::new(so.cmu().ok().unwrap().into());
+    //                     commit_tree.write().unwrap().append(node).unwrap();
+    //                 }
+    //             }
 
-//                 // Write updates every now and then.
-//                 if height % 10000 == 0 {
-//                     info!("Verification at block {}", height);
-//                 }
-//             }
-//         )?;
+    //             // Write updates every now and then.
+    //             if height % 10000 == 0 {
+    //                 info!("Verification at block {}", height);
+    //             }
+    //         }
+    //     )?;
 
-//         // Get the string version of the tree
-//         let mut write_buf = vec![];
-//         commit_tree_computed.write().unwrap().write(&mut write_buf).map_err(|e| format!("{}", e))?;
-//         let computed_tree = hex::encode(write_buf);
+    //     // Get the string version of the tree
+    //     let mut write_buf = vec![];
+    //     commit_tree_computed.write().unwrap().write(&mut write_buf).map_err(|e| format!("{}", e))?;
+    //     let computed_tree = hex::encode(write_buf);
         
-//         let verified = computed_tree == end_tree;
-//         if verified {
-//             info!("Reset the sapling tree verified to true");
-//             self.wallet.write().unwrap().set_sapling_tree_verified();
-//         } else {
-//             warn!("Sapling tree verification failed!");
-//             warn!("Verification Results:\nCalculated\n{}\nExpected\n{}\n", computed_tree, end_tree);
-//         }
+    //     let verified = computed_tree == end_tree;
+    //     if verified {
+    //         info!("Reset the sapling tree verified to true");
+    //         self.wallet.write().unwrap().set_sapling_tree_verified();
+    //     } else {
+    //         warn!("Sapling tree verification failed!");
+    //         warn!("Verification Results:\nCalculated\n{}\nExpected\n{}\n", computed_tree, end_tree);
+    //     }
 
-//         return Ok(verified);
-//     }
+    //     return Ok(verified);
+    // }// do_verify_from_last_checkpoint()
 
-//     /// Return the syncing status of the wallet
-//     pub fn do_scan_status(&self) -> WalletStatus {
-//         self.sync_status.read().unwrap().clone()
-//     }
+    /// Return the syncing status of the wallet
+    pub fn do_scan_status(&self) -> WalletStatus {
+        self.sync_status.read().unwrap().clone()
+    }
 
-//     fn update_current_price(&self) {
-//         // Get the zec price from the server
-//         match grpcconnector::get_current_zec_price(&self.get_server_uri()) {
-//             Ok(p) => {
-//                 self.wallet.write().unwrap().set_latest_zec_price(p);
-//             }
-//             Err(s) => error!("Error fetching latest price: {}", s)
-//         }
-//     }
+    // // @see https://github.com/little-slingshot/zecwallet-light-cli-forum/issues/94
+    // fn update_current_price(&self) {
+    //     // Get the zec price from the server
+    //     match grpcconnector::get_current_zec_price(&self.get_server_uri()) {
+    //         Ok(p) => {
+    //             self.wallet.write().unwrap().set_latest_zec_price(p);
+    //         }
+    //         Err(s) => error!("Error fetching latest price: {}", s)
+    //     }
+    // }
 
-//     // Update the historical prices in the wallet, if any are present. 
-//     fn update_historical_prices(&self) {
-//         let price_info = self.wallet.read().unwrap().price_info.read().unwrap().clone();
+    // // @see https://github.com/little-slingshot/zecwallet-light-cli-forum/issues/95
+    // // Update the historical prices in the wallet, if any are present. 
+    // fn update_historical_prices(&self) {
+    //     let price_info = self.wallet.read().unwrap().price_info.read().unwrap().clone();
         
-//         // Gather all transactions that need historical prices
-//         let txids_to_fetch = self.wallet.read().unwrap().txs.read().unwrap().iter().filter_map(|(txid, wtx)|
-//             match wtx.zec_price {
-//                 None => Some((txid.clone(), wtx.datetime)),
-//                 Some(_) => None,
-//             }
-//         ).collect::<Vec<(TxId, u64)>>();
+    //     // Gather all transactions that need historical prices
+    //     let txids_to_fetch = self.wallet.read().unwrap().txs.read().unwrap().iter().filter_map(|(txid, wtx)|
+    //         match wtx.zec_price {
+    //             None => Some((txid.clone(), wtx.datetime)),
+    //             Some(_) => None,
+    //         }
+    //     ).collect::<Vec<(TxId, u64)>>();
 
-//         if txids_to_fetch.is_empty() {
-//             return;
-//         }
+    //     if txids_to_fetch.is_empty() {
+    //         return;
+    //     }
 
-//         info!("Fetching historical prices for {} txids", txids_to_fetch.len());
+    //     info!("Fetching historical prices for {} txids", txids_to_fetch.len());
 
-//         let retry_count_increase = match grpcconnector::get_historical_zec_prices(&self.get_server_uri(), txids_to_fetch, price_info.currency) {
-//             Ok(prices) => {
-//                 let w = self.wallet.read().unwrap();
-//                 let mut txns = w.txs.write().unwrap();
+    //     let retry_count_increase = match grpcconnector::get_historical_zec_prices(&self.get_server_uri(), txids_to_fetch, price_info.currency) {
+    //         Ok(prices) => {
+    //             let w = self.wallet.read().unwrap();
+    //             let mut txns = w.txs.write().unwrap();
                 
-//                 let any_failed = prices.iter().map(|(txid, p)| {
-//                     match p {
-//                         None => true,
-//                         Some(p) => {
-//                             // Update the price
-//                             info!("Historical price at txid {} was {}", txid, p);
-//                             txns.get_mut(txid).unwrap().zec_price = Some(*p);
+    //             let any_failed = prices.iter().map(|(txid, p)| {
+    //                 match p {
+    //                     None => true,
+    //                     Some(p) => {
+    //                         // Update the price
+    //                         info!("Historical price at txid {} was {}", txid, p);
+    //                         txns.get_mut(txid).unwrap().zec_price = Some(*p);
                             
-//                             // Not failed, so return false
-//                             false
-//                         }
-//                     }
-//                 }).find(|s| *s).is_some();
+    //                         // Not failed, so return false
+    //                         false
+    //                     }
+    //                 }
+    //             }).find(|s| *s).is_some();
 
-//                 // If any of the txids failed, increase the retry_count by 1.
-//                 if any_failed { 1 } else { 0 }
-//             },
-//             Err(_) => {
-//                 1
-//             }
-//         };
+    //             // If any of the txids failed, increase the retry_count by 1.
+    //             if any_failed { 1 } else { 0 }
+    //         },
+    //         Err(_) => {
+    //             1
+    //         }
+    //     };
 
-//         {
-//             let w = self.wallet.read().unwrap();
-//             let mut p = w.price_info.write().unwrap();
-//             p.last_historical_prices_fetched_at = Some(lightwallet::now());
-//             p.historical_prices_retry_count += retry_count_increase;
-//         }
+    //     {
+    //         let w = self.wallet.read().unwrap();
+    //         let mut p = w.price_info.write().unwrap();
+    //         p.last_historical_prices_fetched_at = Some(lightwallet::now());
+    //         p.historical_prices_retry_count += retry_count_increase;
+    //     }
            
-//     }
+    // } // update_historical_prices()
 
 //     pub fn do_sync(&self, print_updates: bool) -> Result<JsonValue, String> {
 //         let mut retry_count = 0;
@@ -1513,328 +1517,334 @@ impl LightClient {
 //         }
 //     }
 
-//     fn do_sync_internal(&self, print_updates: bool, retry_count: u32) -> Result<JsonValue, String> {
-//         // We can only do one sync at a time because we sync blocks in serial order
-//         // If we allow multiple syncs, they'll all get jumbled up.
-//         let _lock = self.sync_lock.lock().unwrap();
+    // // @see https://github.com/little-slingshot/zecwallet-light-cli-forum/issues/92
+    // fn do_sync_internal(&self, print_updates: bool, retry_count: u32) -> Result<JsonValue, String> {
+    //     // We can only do one sync at a time because we sync blocks in serial order
+    //     // If we allow multiple syncs, they'll all get jumbled up.
+    //     let _lock = self.sync_lock.lock().unwrap();
 
-//         // See if we need to verify first
-//         if !self.wallet.read().unwrap().is_sapling_tree_verified() {
-//             match self.do_verify_from_last_checkpoint() {
-//                 Err(e) => return Err(format!("Checkpoint failed to verify with eror:{}.\nYou should rescan.", e)),
-//                 Ok(false) => return Err(format!("Checkpoint failed to verify: Verification returned false.\nYou should rescan.")),
-//                 _ => {}
-//             }
-//         }
+    //     // See if we need to verify first
+    //     if !self.wallet.read().unwrap().is_sapling_tree_verified() {
+    //         match self.do_verify_from_last_checkpoint() {
+    //             Err(e) => return Err(format!("Checkpoint failed to verify with eror:{}.\nYou should rescan.", e)),
+    //             Ok(false) => return Err(format!("Checkpoint failed to verify: Verification returned false.\nYou should rescan.")),
+    //             _ => {}
+    //         }
+    //     }
 
-//         // Sync is 3 parts
-//         // 1. Get the latest block
-//         // 2. Get all the blocks that we don't have
-//         // 3. Find all new Txns that don't have the full Tx, and get them as full transactions 
-//         //    and scan them, mainly to get the memos
-//         let mut last_scanned_height = self.wallet.read().unwrap().last_scanned_height() as u64;
+    //     // Sync is 3 parts
+    //     // 1. Get the latest block
+    //     // 2. Get all the blocks that we don't have
+    //     // 3. Find all new Txns that don't have the full Tx, and get them as full transactions 
+    //     //    and scan them, mainly to get the memos
+    //     let mut last_scanned_height = self.wallet.read().unwrap().last_scanned_height() as u64;
 
-//         // This will hold the latest block fetched from the RPC
-//         let latest_block = fetch_latest_block(&self.get_server_uri())?.height;
+    //     // This will hold the latest block fetched from the RPC
+    //     let latest_block = fetch_latest_block(&self.get_server_uri())?.height;
        
-//         if latest_block < last_scanned_height {
-//             let w = format!("Server's latest block({}) is behind ours({})", latest_block, last_scanned_height);
-//             warn!("{}", w);
-//             return Err(w);
-//         }
+    //     if latest_block < last_scanned_height {
+    //         let w = format!("Server's latest block({}) is behind ours({})", latest_block, last_scanned_height);
+    //         warn!("{}", w);
+    //         return Err(w);
+    //     }
 
-//         info!("Latest block is {}", latest_block);
+    //     info!("Latest block is {}", latest_block);
 
-//         // Get the end height to scan to.
-//         let scan_batch_size = 1000;
-//         let mut end_height = std::cmp::min(last_scanned_height + scan_batch_size, latest_block);
+    //     // Get the end height to scan to.
+    //     let scan_batch_size = 1000;
+    //     let mut end_height = std::cmp::min(last_scanned_height + scan_batch_size, latest_block);
 
-//         // If there's nothing to scan, just return
-//         if last_scanned_height == latest_block {
-//             info!("Nothing to sync, returning");
-//             return Ok(object!{ "result" => "success" })
-//         }
+    //     // If there's nothing to scan, just return
+    //     if last_scanned_height == latest_block {
+    //         info!("Nothing to sync, returning");
+    //         return Ok(object!{ "result" => "success" })
+    //     }
 
-//         {
-//             let mut status = self.sync_status.write().unwrap();
-//             status.is_syncing = true;
-//             status.synced_blocks = last_scanned_height;
-//             status.total_blocks = latest_block;
-//         }
+    //     {
+    //         let mut status = self.sync_status.write().unwrap();
+    //         status.is_syncing = true;
+    //         status.synced_blocks = last_scanned_height;
+    //         status.total_blocks = latest_block;
+    //     }
 
-//         // Count how many bytes we've downloaded
-//         let bytes_downloaded = Arc::new(AtomicUsize::new(0));
+    //     // Count how many bytes we've downloaded
+    //     let bytes_downloaded = Arc::new(AtomicUsize::new(0));
         
-//         self.update_current_price();
+    //     self.update_current_price();
 
-//         let mut total_reorg = 0;
+    //     let mut total_reorg = 0;
 
-//         // Create a new threadpool (upto 8, atleast 2 threads) to scan with
-//         let pool = ThreadPool::new(max(2, min(8, num_cpus::get())));
+    //     // Create a new threadpool (upto 8, atleast 2 threads) to scan with
+    //     let pool = ThreadPool::new(max(2, min(8, num_cpus::get())));
 
-//         // Fetch CompactBlocks in increments
-//         let mut pass = 0;
-//         loop {
-//             pass +=1 ;
-//             // Collect all block times, because we'll need to update transparent tx
-//             // datetime via the block height timestamp
-//             let block_times = Arc::new(RwLock::new(HashMap::new()));
+    //     // Fetch CompactBlocks in increments
+    //     let mut pass = 0;
+    //     loop {
+    //         pass +=1 ;
+    //         // Collect all block times, because we'll need to update transparent tx
+    //         // datetime via the block height timestamp
+    //         let block_times = Arc::new(RwLock::new(HashMap::new()));
 
-//             let local_light_wallet = self.wallet.clone();
-//             let local_bytes_downloaded = bytes_downloaded.clone();
+    //         let local_light_wallet = self.wallet.clone();
+    //         let local_bytes_downloaded = bytes_downloaded.clone();
 
-//             let start_height = last_scanned_height + 1;
+    //         let start_height = last_scanned_height + 1;
 
-//             // Show updates only if we're syncing a lot of blocks
-//             if print_updates && (latest_block - start_height) > 100 {
-//                 print!("Syncing {}/{}\r", start_height, latest_block);
-//                 io::stdout().flush().ok().expect("Could not flush stdout");
-//             }
+    //         // Show updates only if we're syncing a lot of blocks
+    //         if print_updates && (latest_block - start_height) > 100 {
+    //             print!("Syncing {}/{}\r", start_height, latest_block);
+    //             io::stdout().flush().ok().expect("Could not flush stdout");
+    //         }
 
-//             {
-//                 let mut status = self.sync_status.write().unwrap();
-//                 status.is_syncing = true;
-//                 status.synced_blocks = start_height;
-//                 status.total_blocks = latest_block;
-//             }
+    //         {
+    //             let mut status = self.sync_status.write().unwrap();
+    //             status.is_syncing = true;
+    //             status.synced_blocks = start_height;
+    //             status.total_blocks = latest_block;
+    //         }
 
-//             // Fetch compact blocks
-//             info!("Fetching blocks {}-{}", start_height, end_height);
-//             let block_times_inner = block_times.clone();
+    //         // Fetch compact blocks
+    //         info!("Fetching blocks {}-{}", start_height, end_height);
+    //         let block_times_inner = block_times.clone();
 
-//             let last_invalid_height = Arc::new(AtomicI32::new(0));
-//             let last_invalid_height_inner = last_invalid_height.clone();
+    //         let last_invalid_height = Arc::new(AtomicI32::new(0));
+    //         let last_invalid_height_inner = last_invalid_height.clone();
 
-//             let tpool = pool.clone();
-//             fetch_blocks(&self.get_server_uri(), start_height, end_height, pool.clone(),
-//                 move |encoded_block: &[u8], _| {
-//                     // Process the block only if there were no previous errors
-//                     if last_invalid_height_inner.load(Ordering::SeqCst) > 0 {
-//                         return;
-//                     }
+    //         let tpool = pool.clone();
+    //         fetch_blocks(&self.get_server_uri(), start_height, end_height, pool.clone(),
+    //             move |encoded_block: &[u8], _| {
+    //                 // Process the block only if there were no previous errors
+    //                 if last_invalid_height_inner.load(Ordering::SeqCst) > 0 {
+    //                     return;
+    //                 }
 
-//                     // Parse the block and save it's time. We'll use this timestamp for 
-//                     // transactions in this block that might belong to us.
-//                     let block: Result<zcash_client_backend::proto::compact_formats::CompactBlock, _>
-//                                         = protobuf::Message::parse_from_bytes(encoded_block);
-//                     match block {
-//                         Ok(b) => {
-//                             block_times_inner.write().unwrap().insert(b.height, b.time);
-//                         },
-//                         Err(_) => {}
-//                     }
+    //                 // Parse the block and save it's time. We'll use this timestamp for 
+    //                 // transactions in this block that might belong to us.
+    //                 let block: Result<zcash_client_backend::proto::compact_formats::CompactBlock, _>
+    //                                     = protobuf::Message::parse_from_bytes(encoded_block);
+    //                 match block {
+    //                     Ok(b) => {
+    //                         block_times_inner.write().unwrap().insert(b.height, b.time);
+    //                     },
+    //                     Err(_) => {}
+    //                 }
 
-//                     if let Err(invalid_height) = local_light_wallet.read().unwrap().scan_block_with_pool(encoded_block, &tpool) {
-//                         // Block at this height seems to be invalid, so invalidate up till that point
-//                         last_invalid_height_inner.store(invalid_height, Ordering::SeqCst);
-//                     };
+    //                 if let Err(invalid_height) = local_light_wallet.read().unwrap().scan_block_with_pool(encoded_block, &tpool) {
+    //                     // Block at this height seems to be invalid, so invalidate up till that point
+    //                     last_invalid_height_inner.store(invalid_height, Ordering::SeqCst);
+    //                 };
 
-//                     local_bytes_downloaded.fetch_add(encoded_block.len(), Ordering::SeqCst);
-//             })?;
+    //                 local_bytes_downloaded.fetch_add(encoded_block.len(), Ordering::SeqCst);
+    //         })?;
 
-//             // Check if there was any invalid block, which means we might have to do a reorg
-//             let invalid_height = last_invalid_height.load(Ordering::SeqCst);
-//             if invalid_height > 0 {
-//                 total_reorg += self.wallet.read().unwrap().invalidate_block(invalid_height);
+    //         // Check if there was any invalid block, which means we might have to do a reorg
+    //         let invalid_height = last_invalid_height.load(Ordering::SeqCst);
+    //         if invalid_height > 0 {
+    //             total_reorg += self.wallet.read().unwrap().invalidate_block(invalid_height);
 
-//                 warn!("Invalidated block at height {}. Total reorg is now {}", invalid_height, total_reorg);
-//             }
+    //             warn!("Invalidated block at height {}. Total reorg is now {}", invalid_height, total_reorg);
+    //         }
 
-//             // Make sure we're not re-orging too much!
-//             if total_reorg > (crate::lightwallet::MAX_REORG - 1) as u64 {
-//                 error!("Reorg has now exceeded {} blocks!", crate::lightwallet::MAX_REORG);
-//                 return Err(format!("Reorg has exceeded {} blocks. Aborting.", crate::lightwallet::MAX_REORG));
-//             } 
+    //         // Make sure we're not re-orging too much!
+    //         if total_reorg > (crate::lightwallet::MAX_REORG - 1) as u64 {
+    //             error!("Reorg has now exceeded {} blocks!", crate::lightwallet::MAX_REORG);
+    //             return Err(format!("Reorg has exceeded {} blocks. Aborting.", crate::lightwallet::MAX_REORG));
+    //         } 
             
-//             if invalid_height > 0 {
-//                 // Reset the scanning heights
-//                 last_scanned_height = (invalid_height - 1) as u64;
-//                 end_height = std::cmp::min(last_scanned_height + scan_batch_size, latest_block);
+    //         if invalid_height > 0 {
+    //             // Reset the scanning heights
+    //             last_scanned_height = (invalid_height - 1) as u64;
+    //             end_height = std::cmp::min(last_scanned_height + scan_batch_size, latest_block);
 
-//                 warn!("Reorg: reset scanning from {} to {}", last_scanned_height, end_height);
+    //             warn!("Reorg: reset scanning from {} to {}", last_scanned_height, end_height);
 
-//                 continue;
-//             }
+    //             continue;
+    //         }
 
-//             // If it got here, that means the blocks are scanning properly now. 
-//             // So, reset the total_reorg
-//             total_reorg = 0;
+    //         // If it got here, that means the blocks are scanning properly now. 
+    //         // So, reset the total_reorg
+    //         total_reorg = 0;
 
-//             // We'll also fetch all the txids that our transparent addresses are involved with
-//             {
-//                 // Copy over addresses so as to not lock up the wallet, which we'll use inside the callback below. 
-//                 let addresses = self.wallet.read().unwrap()
-//                                     .taddresses.read().unwrap().iter().map(|a| a.clone())
-//                                     .collect::<Vec<String>>();
+    //         // We'll also fetch all the txids that our transparent addresses are involved with
+    //         {
+    //             // Copy over addresses so as to not lock up the wallet, which we'll use inside the callback below. 
+    //             let addresses = self.wallet.read().unwrap()
+    //                                 .taddresses.read().unwrap().iter().map(|a| a.clone())
+    //                                 .collect::<Vec<String>>();
                 
-//                 // Create a channel so the fetch_transparent_txids can send the results back
-//                 let (ctx, crx) = channel();
-//                 let num_addresses = addresses.len();
+    //             // Create a channel so the fetch_transparent_txids can send the results back
+    //             let (ctx, crx) = channel();
+    //             let num_addresses = addresses.len();
 
-//                 for address in addresses {
-//                     let wallet = self.wallet.clone();
-//                     let block_times_inner = block_times.clone();
+    //             for address in addresses {
+    //                 let wallet = self.wallet.clone();
+    //                 let block_times_inner = block_times.clone();
 
-//                     // If this is the first pass after a retry, fetch older t address txids too, becuse
-//                     // they might have been missed last time.
-//                     let transparent_start_height = if pass == 1 && retry_count > 0 {
-//                         start_height - scan_batch_size
-//                     } else {
-//                         start_height
-//                     };
+    //                 // If this is the first pass after a retry, fetch older t address txids too, becuse
+    //                 // they might have been missed last time.
+    //                 let transparent_start_height = if pass == 1 && retry_count > 0 {
+    //                     start_height - scan_batch_size
+    //                 } else {
+    //                     start_height
+    //                 };
 
-//                     let pool = pool.clone();
-//                     let server_uri = self.get_server_uri();
-//                     let ctx = ctx.clone();
+    //                 let pool = pool.clone();
+    //                 let server_uri = self.get_server_uri();
+    //                 let ctx = ctx.clone();
 
-//                     pool.execute(move || {
-//                         // Fetch the transparent transactions for this address, and send the results 
-//                         // via the channel
-//                         let r = fetch_transparent_txids(&server_uri, address, transparent_start_height, end_height,
-//                             move |tx_bytes: &[u8], height: u64| {
-//                                 let tx = Transaction::read(tx_bytes).unwrap();
+    //                 pool.execute(move || {
+    //                     // Fetch the transparent transactions for this address, and send the results 
+    //                     // via the channel
+    //                     let r = fetch_transparent_txids(&server_uri, address, transparent_start_height, end_height,
+    //                         move |tx_bytes: &[u8], height: u64| {
+    //                             let tx = Transaction::read(tx_bytes).unwrap();
 
-//                                 // Scan this Tx for transparent inputs and outputs
-//                                 let datetime = block_times_inner.read().unwrap().get(&height).map(|v| *v).unwrap_or(0);
-//                                 wallet.read().unwrap().scan_full_tx(&tx, height as i32, datetime as u64); 
-//                         });
-//                         ctx.send(r).unwrap();
-//                     });
-//                 }
+    //                             // Scan this Tx for transparent inputs and outputs
+    //                             let datetime = block_times_inner.read().unwrap().get(&height).map(|v| *v).unwrap_or(0);
+    //                             wallet.read().unwrap().scan_full_tx(&tx, height as i32, datetime as u64); 
+    //                     });
+    //                     ctx.send(r).unwrap();
+    //                 });
+    //             }
 
-//                 // Collect all results from the transparent fetches, and make sure everything was OK. 
-//                 // If it was not, we return an error, which will go back to the retry
-//                 crx.iter().take(num_addresses).collect::<Result<Vec<()>, String>>()?;
-//             }           
+    //             // Collect all results from the transparent fetches, and make sure everything was OK. 
+    //             // If it was not, we return an error, which will go back to the retry
+    //             crx.iter().take(num_addresses).collect::<Result<Vec<()>, String>>()?;
+    //         }           
             
-//             // Do block height accounting
-//             last_scanned_height = end_height;
-//             end_height = last_scanned_height + scan_batch_size;
+    //         // Do block height accounting
+    //         last_scanned_height = end_height;
+    //         end_height = last_scanned_height + scan_batch_size;
 
-//             if last_scanned_height >= latest_block {
-//                 break;
-//             } else if end_height > latest_block {
-//                 end_height = latest_block;
-//             }
-//         }
+    //         if last_scanned_height >= latest_block {
+    //             break;
+    //         } else if end_height > latest_block {
+    //             end_height = latest_block;
+    //         }
+    //     }
 
-//         if print_updates{
-//             println!(""); // New line to finish up the updates
-//         }
+    //     if print_updates{
+    //         println!(""); // New line to finish up the updates
+    //     }
 
-//         info!("Synced to {}, Downloaded {} kB", latest_block, bytes_downloaded.load(Ordering::SeqCst) / 1024);
-//         {
-//             let mut status = self.sync_status.write().unwrap();
-//             status.is_syncing = false;
-//             status.synced_blocks = latest_block;
-//             status.total_blocks = latest_block;
-//         }
+    //     info!("Synced to {}, Downloaded {} kB", latest_block, bytes_downloaded.load(Ordering::SeqCst) / 1024);
+    //     {
+    //         let mut status = self.sync_status.write().unwrap();
+    //         status.is_syncing = false;
+    //         status.synced_blocks = latest_block;
+    //         status.total_blocks = latest_block;
+    //     }
 
-//         // Get the Raw transaction for all the wallet transactions
+    //     // Get the Raw transaction for all the wallet transactions
 
-//         // We need to first copy over the Txids from the wallet struct, because
-//         // we need to free the read lock from here (Because we'll self.wallet.txs later)
-//         let mut txids_to_fetch: Vec<(TxId, i32)> = self.wallet.read().unwrap().txs.read().unwrap().values()
-//                                                         .filter(|wtx| wtx.full_tx_scanned == false)
-//                                                         .map(|wtx| (wtx.txid.clone(), wtx.block))
-//                                                         .collect::<Vec<(TxId, i32)>>();
+    //     // We need to first copy over the Txids from the wallet struct, because
+    //     // we need to free the read lock from here (Because we'll self.wallet.txs later)
+    //     let mut txids_to_fetch: Vec<(TxId, i32)> = self.wallet.read().unwrap().txs.read().unwrap().values()
+    //                                                     .filter(|wtx| wtx.full_tx_scanned == false)
+    //                                                     .map(|wtx| (wtx.txid.clone(), wtx.block))
+    //                                                     .collect::<Vec<(TxId, i32)>>();
 
-//         info!("Fetching {} new txids", txids_to_fetch.len());
-//         txids_to_fetch.sort();
-//         txids_to_fetch.dedup();
+    //     info!("Fetching {} new txids", txids_to_fetch.len());
+    //     txids_to_fetch.sort();
+    //     txids_to_fetch.dedup();
 
-//         let result: Vec<Result<(), String>> = {
-//             // Fetch all the txids in a parallel iterator
-//             use rayon::prelude::*;
+    //     let result: Vec<Result<(), String>> = {
+    //         // Fetch all the txids in a parallel iterator
+    //         use rayon::prelude::*;
 
-//             let light_wallet_clone = self.wallet.clone();
-//             let server_uri = self.get_server_uri();
+    //         let light_wallet_clone = self.wallet.clone();
+    //         let server_uri = self.get_server_uri();
 
-//             txids_to_fetch.par_iter().map(|(txid, height)| {
-//                 info!("Fetching full Tx: {}", txid);
+    //         txids_to_fetch.par_iter().map(|(txid, height)| {
+    //             info!("Fetching full Tx: {}", txid);
 
-//                 match fetch_full_tx(&server_uri, *txid) {
-//                     Ok(tx_bytes) => {
-//                         let tx = Transaction::read(&tx_bytes[..]).unwrap();
+    //             match fetch_full_tx(&server_uri, *txid) {
+    //                 Ok(tx_bytes) => {
+    //                     let tx = Transaction::read(&tx_bytes[..]).unwrap();
     
-//                         light_wallet_clone.read().unwrap().scan_full_tx(&tx, *height, 0);
-//                         Ok(())
-//                     },
-//                     Err(e) => Err(e)
-//                 }
-//             }).collect()
-//         };
+    //                     light_wallet_clone.read().unwrap().scan_full_tx(&tx, *height, 0);
+    //                     Ok(())
+    //                 },
+    //                 Err(e) => Err(e)
+    //             }
+    //         }).collect()
+    //     };
         
-//         // Wait for all the fetches to finish.
-//         match result.into_iter().collect::<Result<Vec<()>, String>>() {
-//             Ok(_) => Ok(object!{
-//                 "result" => "success",
-//                 "latest_block" => latest_block,
-//                 "downloaded_bytes" => bytes_downloaded.load(Ordering::SeqCst)
-//             }),
-//             Err(e) => Err(format!("Error fetching all txns for memos: {}", e))
-//         }        
-//     }
+    //     // Wait for all the fetches to finish.
+    //     match result.into_iter().collect::<Result<Vec<()>, String>>() {
+    //         Ok(_) => Ok(object!{
+    //             "result" => "success",
+    //             "latest_block" => latest_block,
+    //             "downloaded_bytes" => bytes_downloaded.load(Ordering::SeqCst)
+    //         }),
+    //         Err(e) => Err(format!("Error fetching all txns for memos: {}", e))
+    //     }        
+    // }// do_sync_internal()
 
-//     pub fn do_shield(&self, address: Option<String>) -> Result<String, String> {
-//         let fee = fee::get_default_fee(self.wallet.read().unwrap().last_scanned_height());
-//         let tbal = self.wallet.read().unwrap().tbalance(None);
+    // @see https://github.com/little-slingshot/zecwallet-light-cli-forum/issues/91#issuecomment-1126202704
+    // pub fn do_shield(&self, address: Option<String>) -> Result<String, String> {
+    //     let fee = fee::get_default_fee(self.wallet.read().unwrap().last_scanned_height());
+    //     let tbal = self.wallet.read().unwrap().tbalance(None);
 
-//         // Make sure there is a balance, and it is greated than the amount
-//         if tbal <= fee {
-//             return Err(format!("Not enough transparent balance to shield. Have {} zats, need more than {} zats to cover tx fee", tbal, fee));
-//         }
+    //     // Make sure there is a balance, and it is greated than the amount
+    //     if tbal <= fee {
+    //         return Err(format!("Not enough transparent balance to shield. Have {} zats, need more than {} zats to cover tx fee", tbal, fee));
+    //     }
 
-//         let addr = address.or(self.wallet.read().unwrap().get_all_zaddresses().get(0).map(|s| s.clone())).unwrap();
-//         let branch_id = self.consensus_branch_id();
+    //     let addr = address.or(self.wallet.read().unwrap().get_all_zaddresses().get(0).map(|s| s.clone())).unwrap();
+    //     let branch_id = self.consensus_branch_id();
 
-//         let result = {
-//             let _lock = self.sync_lock.lock().unwrap();
-//             let prover = LocalTxProver::from_bytes(&self.sapling_spend, &self.sapling_output);
+    //     let result = {
+    //         let _lock = self.sync_lock.lock().unwrap();
+    //         let prover = LocalTxProver::from_bytes(&self.sapling_spend, &self.sapling_output);
             
-//             self.wallet.read().unwrap().send_to_address(
-//                 branch_id,
-//                 prover,
-//                 true, 
-//                 vec![(&addr, tbal - fee, None)],
-//                 |txbytes| broadcast_raw_tx(&self.get_server_uri(), txbytes)
-//             )
-//         };
+    //         self.wallet.read().unwrap().send_to_address(
+    //             branch_id,
+    //             prover,
+    //             true, 
+    //             vec![(&addr, tbal - fee, None)],
+    //             |txbytes| broadcast_raw_tx(&self.get_server_uri(), txbytes)
+    //         )
+    //     };
 
-//         result.map(|(txid, _)| txid)
-//     }
+    //     result.map(|(txid, _)| txid)
+    // }
 
-//     fn consensus_branch_id(&self) -> u32 { 
-//         let height = self.wallet.read().unwrap().last_scanned_height();
-//         let branch: BranchId = BranchId::for_height(&MAIN_NETWORK, BlockHeight::from_u32(height as u32));
-//         let branch_id: u32 = u32::from(branch);
-//         branch_id
-//     }
+    fn consensus_branch_id(&self) -> u32 { 
+        let height = self.wallet.read().unwrap().last_scanned_height();
+        let branch: BranchId = BranchId::for_height(&MAIN_NETWORK, BlockHeight::from_u32(height as u32));
+        let branch_id: u32 = u32::from(branch);
+        branch_id
+    }
 
-//     pub fn do_send(&self, addrs: Vec<(&str, u64, Option<String>)>) -> Result<String, String> {
-//         // First, get the concensus branch ID
-//         let branch_id = self.consensus_branch_id();
-//         info!("Creating transaction");
+    // @see https://github.com/little-slingshot/zecwallet-light-cli-forum/issues/91
+    // pub fn do_send(&self, addrs: Vec<(&str, u64, Option<String>)>) -> Result<String, String> {
+    //     // First, get the concensus branch ID
+    //     let branch_id = self.consensus_branch_id();
+    //     info!("Creating transaction");
 
-//         let result = {
-//             let _lock = self.sync_lock.lock().unwrap();
-//             let prover = LocalTxProver::from_bytes(&self.sapling_spend, &self.sapling_output);
+    //     let result = {
+    //         let _lock = self.sync_lock.lock().unwrap();
+    //         let prover = LocalTxProver::from_bytes(&self.sapling_spend, &self.sapling_output);
 
-//             self.wallet.read().unwrap().send_to_address(
-//                 branch_id, 
-//                 prover,
-//                 false,
-//                 addrs,
-//                 |txbytes| broadcast_raw_tx(&self.get_server_uri(), txbytes)
-//             )
-//         };
+    //         self.wallet.read().unwrap().send_to_address(
+    //             branch_id, 
+    //             prover,
+    //             false,
+    //             addrs,
+    //             |txbytes| broadcast_raw_tx(&self.get_server_uri(), txbytes)
+    //         )
+    //     };
         
-//         result.map(|(txid, _)| txid)
-//     }
-// }
-
-// #[cfg(test)]
-// pub mod tests {
+    //     result.map(|(txid, _)| txid)
+    // }
+}// LightClient
+// -----------------------------------------------
+// -----------------------------------------------
+// -----------------------------------------------
+// -----------------------------------------------
+#[cfg(test)]
+pub mod tests {
 //     use lazy_static::lazy_static;
 //     use tempdir::TempDir;
 //     use super::{LightClient, LightClientConfig};
@@ -2039,4 +2049,4 @@ impl LightClient {
 //     }
     
 
-}// LightClient
+}//  pub mod tests 
