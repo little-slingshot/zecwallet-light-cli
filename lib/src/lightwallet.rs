@@ -2338,8 +2338,8 @@ impl LightWallet {
                 };
 
                 match address_to_sk.get(&utxo.address) {
-                    Some(sk) => builder.add_transparent_input(*sk, outpoint.clone(), coin.clone()),
-                    // Some(sk) => builder.add_transparent_input(sk.clone(), outpoint.clone(), coin.clone()), // for reference
+                    // Some(sk) => builder.add_transparent_input(*sk, outpoint.clone(), coin.clone()),
+                    Some(sk) => builder.add_transparent_input(sk.clone(), outpoint.clone(), coin.clone()), // for reference
                     None     => {
                         // Something is very wrong
                         let e = format!("Couldn't find the secreykey for taddr {}", utxo.address);
