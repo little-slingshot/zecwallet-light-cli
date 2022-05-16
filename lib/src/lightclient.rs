@@ -850,49 +850,63 @@ impl LightClient {
         self.config.server.clone()
     }
 
-    // pub fn do_zec_price(&self) -> String {
-    //     let mut price_info = self.wallet.read().unwrap().price_info.read().unwrap().clone();
+    pub async fn do_zec_price(&self) -> String {
+        let mut price_info = self.wallet.read().unwrap().price_info.read().unwrap().clone();
         
-    //     // If there is no price, try to fetch it first.
-    //     if price_info.zec_price.is_none() {
-    //         self.update_current_price();
-    //         price_info = self.wallet.read().unwrap().price_info.read().unwrap().clone();
-    //     }
+        // If there is no price, try to fetch it first.
+        if price_info.zec_price.is_none() {
+            self.update_current_price().await;
+            price_info = self.wallet.read().unwrap().price_info.read().unwrap().clone();
+        }
          
-    //     match price_info.zec_price {
-    //         None => return "Error: No price".to_string(),
-    //         Some((ts, p)) => {
-    //             let o = object! {
-    //                 "zec_price" => p,
-    //                 "fetched_at" =>  ts,
-    //                 "currency" => price_info.currency
-    //             };
+        match price_info.zec_price {
+            None => return "Error: No price".to_string(),
+            Some((ts, p)) => {
+                let o = object! {
+                    "zec_price" => p,
+                    "fetched_at" =>  ts,
+                    "currency" => price_info.currency
+                };
 
-    //             o.pretty(2)
-    //         }
-    //     }
-    // }
+                o.pretty(2)
+            }
+        }
+    }
 
-    // // @see https://github.com/little-slingshot/zecwallet-light-cli-forum/issues/97
-    // pub fn do_info(&self) -> String {
-    //     match get_info(&self.get_server_uri()) {
-    //         Ok(i) => {
-    //             let o = object!{
-    //                 "version" => i.version,
-    //                 "git_commit" => i.git_commit,
-    //                 "server_uri" => self.get_server_uri().to_string(),
-    //                 "vendor" => i.vendor,
-    //                 "taddr_support" => i.taddr_support,
-    //                 "chain_name" => i.chain_name,
-    //                 "sapling_activation_height" => i.sapling_activation_height,
-    //                 "consensus_branch_id" => i.consensus_branch_id,
-    //                 "latest_block_height" => i.block_height
-    //             };
-    //             o.pretty(2)
-    //         },
-    //         Err(e) => e
-    //     }
-    // }
+    // @see https://github.com/little-slingshot/zecwallet-light-cli-forum/issues/97
+    pub async fn do_info(&self) -> String {
+        match get_info(&self.get_server_uri()).await {
+            Ok(i) => {
+                #[cfg(not(feature = "zephyr_wasm"))]
+                let o = object!{
+                    "version" => i.version,
+                    "git_commit" => i.git_commit,
+                    "server_uri" => self.get_server_uri().to_string(),
+                    "vendor" => i.vendor,
+                    "taddr_support" => i.taddr_support,
+                    "chain_name" => i.chain_name,
+                    "sapling_activation_height" => i.sapling_activation_height,
+                    "consensus_branch_id" => i.consensus_branch_id,
+                    "latest_block_height" => i.block_height
+                };
+
+                #[cfg(feature = "zephyr_wasm")]
+                let o = object!{
+                    "version" => i.version,
+                    "git_commit" => i.gitCommit,
+                    "server_uri" => self.get_server_uri().to_string(),
+                    "vendor" => i.vendor,
+                    "taddr_support" => i.taddrSupport,
+                    "chain_name" => i.chainName,
+                    "sapling_activation_height" => i.saplingActivationHeight,
+                    "consensus_branch_id" => i.consensusBranchId,
+                    "latest_block_height" => i.blockHeight
+                };
+                o.pretty(2)
+            },
+            Err(e) => e
+        }
+    }
 
     pub fn do_send_progress(&self) -> Result<JsonValue, String> {
         let progress = self.wallet.read().unwrap().get_send_progress();
@@ -1428,16 +1442,16 @@ impl LightClient {
         self.sync_status.read().unwrap().clone()
     }
 
-    // // @see https://github.com/little-slingshot/zecwallet-light-cli-forum/issues/94
-    // fn update_current_price(&self) {
-    //     // Get the zec price from the server
-    //     match grpcconnector::get_current_zec_price(&self.get_server_uri()) {
-    //         Ok(p) => {
-    //             self.wallet.write().unwrap().set_latest_zec_price(p);
-    //         }
-    //         Err(s) => error!("Error fetching latest price: {}", s)
-    //     }
-    // }
+    // @see https://github.com/little-slingshot/zecwallet-light-cli-forum/issues/94
+    async fn update_current_price(&self) {
+        // Get the zec price from the server
+        match grpcconnector::get_current_zec_price(&self.get_server_uri()).await {
+            Ok(p) => {
+                self.wallet.write().unwrap().set_latest_zec_price(p);
+            }
+            Err(s) => error!("Error fetching latest price: {}", s)
+        }
+    }
 
     // // @see https://github.com/little-slingshot/zecwallet-light-cli-forum/issues/95
     // // Update the historical prices in the wallet, if any are present. 
