@@ -10,7 +10,6 @@ use std::sync::mpsc::channel;
 use threadpool::ThreadPool;
 
 use log::{error, info, warn};
-use rand::{rngs::OsRng, Rng};
 use subtle::{ConditionallySelectable, ConstantTimeEq, CtOption};
 
 use bip39::{Language, Mnemonic};
@@ -234,14 +233,27 @@ impl LightWallet {
         }                                    
     }
 
-    pub fn new(seed_phrase: Option<String>, config: &LightClientConfig, latest_block: u64) -> io::Result<Self> {
+    pub fn new(seed_phrase: Option<String>, entropy: Option<String>, config: &LightClientConfig, latest_block: u64) -> io::Result<Self> {
         // This is the source entropy that corresponds to the 24-word seed phrase
         let mut seed_bytes = [0u8; 32];
 
         if seed_phrase.is_none() {
-            // Create a random seed. 
-            let mut system_rng = OsRng;
-            system_rng.fill(&mut seed_bytes);
+            // Create a random seed from the entropy
+            if entropy.is_none() {
+                return Err(Error::new(ErrorKind::NotFound, "Couldn't find entropy".to_string()))
+            }
+
+            match hex::decode(entropy.unwrap()) {
+                Ok(bytes) => seed_bytes.copy_from_slice(&bytes),
+                Err(e) => {
+                    let e = format!("Error hex-decoding entropy string: {}", e);
+                    error!("{}", e);
+                    return Err(io::Error::new(ErrorKind::InvalidData, e));
+                }
+            }            
+            // // Create a random seed. 
+            // let mut system_rng = OsRng;
+            // system_rng.fill(&mut seed_bytes);
         } else {
             let phrase = match Mnemonic::from_phrase(seed_phrase.clone().unwrap(), Language::English) {
                 Ok(p) => p,

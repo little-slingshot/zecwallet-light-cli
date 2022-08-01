@@ -11,7 +11,10 @@ lib/rsd/*
 /tmp
 /www/libtest/node_modules
 /www/libtest/dist
+*.0.rs
 *.1.rs
 *.2.rs
+*.symlink
+
 
 

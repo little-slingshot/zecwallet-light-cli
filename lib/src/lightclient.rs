@@ -1,3 +1,4 @@
+#![allow(unused_imports)]
 use crate::lightwallet::{self, LightWallet, message::Message};
 
 use zcash_proofs::prover::LocalTxProver;
@@ -23,7 +24,21 @@ use zcash_primitives::sapling::{Node};
 use zcash_client_backend::encoding::{decode_payment_address, encode_payment_address};
 
 use log::{info, warn, error, LevelFilter};
+use web_sys::console;
 
+
+#[cfg(not(feature = "zephyr_wasm"))]
+use {
+    log4rs::append::rolling_file::RollingFileAppender,
+    log4rs::encode::pattern::PatternEncoder,
+    log4rs::config::{Appender, Config, Root},
+    log4rs::filter::threshold::ThresholdFilter,
+    log4rs::append::rolling_file::policy::compound::{
+            CompoundPolicy,
+            trigger::size::SizeTrigger,
+            roll::fixed_window::FixedWindowRoller,
+    },
+};
 // use log4rs::append::rolling_file::RollingFileAppender;
 // use log4rs::encode::pattern::PatternEncoder;
 // use log4rs::config::{Appender, Config, Root};
@@ -35,6 +50,7 @@ use log::{info, warn, error, LevelFilter};
 // };
 
 use crate::grpcconnector::{self, *};
+// use crate::grpcconnector::*;
 use crate::lightwallet::{fee, NodePosition};
 use crate::ANCHOR_OFFSET;
 
@@ -84,18 +100,27 @@ impl LightClientConfig {
     }
 
     pub async fn create(server: http::Uri) -> io::Result<(LightClientConfig, u64)> {
-        use std::net::ToSocketAddrs;
-        // Test for a connection first
-        format!("{}:{}", server.host().unwrap(), server.port().unwrap())
+
+        #[cfg(not(feature = "zephyr_wasm"))]
+        {
+            use std::net::ToSocketAddrs;
+            // Test for a connection first
+            console::log_1(&"Testing for connection".into());
+            
+            format!("{}:{}", server.host().unwrap(), server.port().unwrap())
             .to_socket_addrs()?
             .next()
             .ok_or(std::io::Error::new(ErrorKind::ConnectionRefused, "Couldn't resolve server!"))?;
-
+        }
+            
         // Do a getinfo first, before opening the wallet
+        console::log_1(&"LightClientConfig::create() >>> Doing get_info()".into());
+
         let info = grpcconnector::get_info(&server).await
             .map_err(|e| std::io::Error::new(ErrorKind::ConnectionRefused, e))?;
 
             // info = info.unwrap();
+        console::log_1(&"LightClientConfig::create() >>> Finished get_info() call.".into());
 
         // Create a Light Client Config
         #[cfg(not(feature = "zephyr_wasm"))]
@@ -182,7 +207,7 @@ impl LightClientConfig {
         }
 
         // Create directory if it doesn't exist on non-mobile platforms
-        #[cfg(all(not(target_os="ios"), not(target_os="android")))]
+        #[cfg(all(not(target_os="ios"), not(target_os="android"), not(feature = "zephyr_wasm")))]
         {
             match std::fs::create_dir_all(zcash_data_location.clone()) {
                 Ok(_) => {},
@@ -433,7 +458,7 @@ impl LightClient {
         }
 
         // Ensure that the sapling params are stored on disk properly as well. Only on desktop
-        if cfg!(all(not(target_os="ios"), not(target_os="android"))) {
+        if cfg!(all(not(target_os="ios"), not(target_os="android"), not(feature = "zephyr_wasm"))) {
             match self.config.get_zcash_params_path() {
                 Ok(zcash_params_dir) => {
                     // Create the sapling output and spend params files
@@ -458,10 +483,10 @@ impl LightClient {
 
     /// Method to create a test-only version of the LightClient
     #[allow(dead_code)]
-    pub fn unconnected(seed_phrase: String, dir: Option<String>) -> io::Result<Self> {
+    pub fn unconnected(seed_phrase: String, entropy: String, dir: Option<String>) -> io::Result<Self> {
         let config = LightClientConfig::create_unconnected("test".to_string(), dir);
         let mut l = LightClient {
-                wallet          : Arc::new(RwLock::new(LightWallet::new(Some(seed_phrase), &config, 0)?)),
+                wallet          : Arc::new(RwLock::new(LightWallet::new(Some(seed_phrase), Some(entropy), &config, 0)?)),
                 config          : config.clone(),
                 sapling_output  : vec![], 
                 sapling_spend   : vec![],
@@ -483,7 +508,7 @@ impl LightClient {
 
     fn new_wallet(config: &LightClientConfig, latest_block: u64, num_zaddres: u32, entropy: String) -> io::Result<Self>  {
         let mut l = LightClient {
-                wallet          : Arc::new(RwLock::new(LightWallet::new(None, config, latest_block)?)),
+                wallet          : Arc::new(RwLock::new(LightWallet::new(None, Some(entropy), config, latest_block)?)),
                 config          : config.clone(),
                 sapling_output  : vec![], 
                 sapling_spend   : vec![],
@@ -510,7 +535,8 @@ impl LightClient {
     /// Create a brand new wallet with a new seed phrase. Will fail if a wallet file 
     /// already exists on disk
     pub fn new(config: &LightClientConfig, latest_block: u64, entropy: String) -> io::Result<Self> {
-        #[cfg(all(not(target_os="ios"), not(target_os="android")))]
+        // [cfg(all(not(target_os="ios"), not(target_os="android"), not(target_family="wasm")))]
+        #[cfg(all(not(target_os="ios"), not(target_os="android"), not(feature = "zephyr_wasm")))]
         {        
             if config.wallet_exists() {
                 return Err(Error::new(ErrorKind::AlreadyExists,
@@ -522,8 +548,8 @@ impl LightClient {
 
     }
 
-    pub fn new_from_phrase(seed_phrase: String, config: &LightClientConfig, birthday: u64, overwrite: bool) -> io::Result<Self> {
-        #[cfg(all(not(target_os="ios"), not(target_os="android")))]
+    pub fn new_from_phrase(seed_phrase: String, entropy: String, config: &LightClientConfig, birthday: u64, overwrite: bool) -> io::Result<Self> {
+        #[cfg(all(not(target_os="ios"), not(target_os="android"), not(feature = "zephyr_wasm")))]
         {
             if !overwrite && config.wallet_exists() {
                 return Err(Error::new(ErrorKind::AlreadyExists,
@@ -532,7 +558,7 @@ impl LightClient {
         }
 
         let mut l = LightClient {
-                wallet          : Arc::new(RwLock::new(LightWallet::new(Some(seed_phrase), config, birthday)?)),
+                wallet          : Arc::new(RwLock::new(LightWallet::new(Some(seed_phrase), Some(entropy), config, birthday)?)),
                 config          : config.clone(),
                 sapling_output  : vec![], 
                 sapling_spend   : vec![],
@@ -602,15 +628,16 @@ impl LightClient {
         Ok(lc)
     }
 
-    // pub fn init_logging(&self) -> io::Result<()> {
-    //     // Configure logging first.
-    //     let log_config = self.config.get_log_config()?;
-    //     log4rs::init_config(log_config).map_err(|e| {
-    //         std::io::Error::new(ErrorKind::Other, e)
-    //     })?;
+    #[cfg(not(feature = "zephyr_wasm"))]
+    pub fn init_logging(&self) -> io::Result<()> {
+        // Configure logging first.
+        let log_config = self.config.get_log_config()?;
+        log4rs::init_config(log_config).map_err(|e| {
+            std::io::Error::new(ErrorKind::Other, e)
+        })?;
 
-    //     Ok(())
-    // }
+        Ok(())
+    }
 
     pub fn attempt_recover_seed(config: &LightClientConfig, password: Option<String>) -> Result<String, String> {
         use std::io::prelude::*;
@@ -776,7 +803,7 @@ impl LightClient {
 
     pub fn do_save(&self) -> Result<(), String> {        
         // On mobile platforms, disable the save, because the saves will be handled by the native layer, and not in rust
-        if cfg!(all(not(target_os="ios"), not(target_os="android"))) { 
+        if cfg!(all(not(target_os="ios"), not(target_os="android"), not(feature = "zephyr_wasm"))) { 
             // If the wallet is encrypted but unlocked, lock it again.
             {
                 let mut wallet = self.wallet.write().unwrap();
@@ -1453,347 +1480,355 @@ impl LightClient {
         }
     }
 
-    // // @see https://github.com/little-slingshot/zecwallet-light-cli-forum/issues/95
-    // // Update the historical prices in the wallet, if any are present. 
-    // fn update_historical_prices(&self) {
-    //     let price_info = self.wallet.read().unwrap().price_info.read().unwrap().clone();
+    // @see https://github.com/little-slingshot/zecwallet-light-cli-forum/issues/95
+    // Update the historical prices in the wallet, if any are present. 
+    pub async fn update_historical_prices(&self) {
+        let price_info = self.wallet.read().unwrap().price_info.read().unwrap().clone();
         
-    //     // Gather all transactions that need historical prices
-    //     let txids_to_fetch = self.wallet.read().unwrap().txs.read().unwrap().iter().filter_map(|(txid, wtx)|
-    //         match wtx.zec_price {
-    //             None => Some((txid.clone(), wtx.datetime)),
-    //             Some(_) => None,
-    //         }
-    //     ).collect::<Vec<(TxId, u64)>>();
+        // Gather all transactions that need historical prices
+        let txids_to_fetch = self.wallet.read().unwrap().txs.read().unwrap().iter().filter_map(|(txid, wtx)|
+            match wtx.zec_price {
+                None => Some((txid.clone(), wtx.datetime)),
+                Some(_) => None,
+            }
+        ).collect::<Vec<(TxId, u64)>>();
 
-    //     if txids_to_fetch.is_empty() {
-    //         return;
-    //     }
+        if txids_to_fetch.is_empty() {
+            return;
+        }
 
-    //     info!("Fetching historical prices for {} txids", txids_to_fetch.len());
+        info!("Fetching historical prices for {} txids", txids_to_fetch.len());
 
-    //     let retry_count_increase = match grpcconnector::get_historical_zec_prices(&self.get_server_uri(), txids_to_fetch, price_info.currency) {
-    //         Ok(prices) => {
-    //             let w = self.wallet.read().unwrap();
-    //             let mut txns = w.txs.write().unwrap();
+        let retry_count_increase = match grpcconnector::get_historical_zec_prices(&self.get_server_uri(), txids_to_fetch, price_info.currency).await {
+            Ok(prices) => {
+                let w = self.wallet.read().unwrap();
+                let mut txns = w.txs.write().unwrap();
                 
-    //             let any_failed = prices.iter().map(|(txid, p)| {
-    //                 match p {
-    //                     None => true,
-    //                     Some(p) => {
-    //                         // Update the price
-    //                         info!("Historical price at txid {} was {}", txid, p);
-    //                         txns.get_mut(txid).unwrap().zec_price = Some(*p);
+                let any_failed = prices.iter().map(|(txid, p)| {
+                    match p {
+                        None => true,
+                        Some(p) => {
+                            // Update the price
+                            info!("Historical price at txid {} was {}", txid, p);
+                            txns.get_mut(txid).unwrap().zec_price = Some(*p);
                             
-    //                         // Not failed, so return false
-    //                         false
-    //                     }
-    //                 }
-    //             }).find(|s| *s).is_some();
+                            // Not failed, so return false
+                            false
+                        }
+                    }
+                }).find(|s| *s).is_some();
 
-    //             // If any of the txids failed, increase the retry_count by 1.
-    //             if any_failed { 1 } else { 0 }
-    //         },
-    //         Err(_) => {
-    //             1
-    //         }
-    //     };
+                // If any of the txids failed, increase the retry_count by 1.
+                if any_failed { 1 } else { 0 }
+            },
+            Err(_) => {
+                1
+            }
+        };
 
-    //     {
-    //         let w = self.wallet.read().unwrap();
-    //         let mut p = w.price_info.write().unwrap();
-    //         p.last_historical_prices_fetched_at = Some(lightwallet::now());
-    //         p.historical_prices_retry_count += retry_count_increase;
-    //     }
+        {
+            let w = self.wallet.read().unwrap();
+            let mut p = w.price_info.write().unwrap();
+            p.last_historical_prices_fetched_at = Some(lightwallet::now());
+            p.historical_prices_retry_count += retry_count_increase;
+        }
            
-    // } // update_historical_prices()
+    } // update_historical_prices()
 
-//     pub fn do_sync(&self, print_updates: bool) -> Result<JsonValue, String> {
-//         let mut retry_count = 0;
-//         loop {
-//             match self.do_sync_internal(print_updates, retry_count) {
-//                 Ok(j) => {
-//                     // If sync was successfull, also try to get historical prices
-//                     self.update_historical_prices();
+    pub async fn do_sync(&self, print_updates: bool) -> Result<JsonValue, String> {
+        let mut retry_count = 0;
+        loop {
+            match self.do_sync_internal(print_updates, retry_count).await {
+                Ok(j) => {
+                    // If sync was successfull, also try to get historical prices
+                    self.update_historical_prices().await;
 
-//                     return Ok(j)
-//                 },
-//                 Err(e) => {
-//                     retry_count += 1;
-//                     if retry_count > 5 {
-//                         return Err(e);
-//                     }
-//                     // Sleep exponentially backing off
-//                     std::thread::sleep(std::time::Duration::from_secs((2 as u64).pow(retry_count)));
-//                     println!("Sync error {}\nRetry count {}", e, retry_count);
-//                 }
-//             }
-//         }
-//     }
+                    return Ok(j)
+                },
+                Err(e) => {
+                    retry_count += 1;
+                    if retry_count > 5 {
+                        return Err(e);
+                    }
+                    // Sleep exponentially backing off
+                    std::thread::sleep(std::time::Duration::from_secs((2 as u64).pow(retry_count)));
+                    println!("Sync error {}\nRetry count {}", e, retry_count);
+                }
+            }
+        }
+    }
 
-    // // @see https://github.com/little-slingshot/zecwallet-light-cli-forum/issues/92
-    // fn do_sync_internal(&self, print_updates: bool, retry_count: u32) -> Result<JsonValue, String> {
-    //     // We can only do one sync at a time because we sync blocks in serial order
-    //     // If we allow multiple syncs, they'll all get jumbled up.
-    //     let _lock = self.sync_lock.lock().unwrap();
+    #[cfg(feature = "zephyr_wasm")]
+    async fn do_sync_internal(&self, print_updates: bool, retry_count: u32) -> Result<JsonValue, String> {
+        // TODO: replace stub with actual implementation
+        Ok(JsonValue::Null)
+    }
 
-    //     // See if we need to verify first
-    //     if !self.wallet.read().unwrap().is_sapling_tree_verified() {
-    //         match self.do_verify_from_last_checkpoint() {
-    //             Err(e) => return Err(format!("Checkpoint failed to verify with eror:{}.\nYou should rescan.", e)),
-    //             Ok(false) => return Err(format!("Checkpoint failed to verify: Verification returned false.\nYou should rescan.")),
-    //             _ => {}
-    //         }
-    //     }
 
-    //     // Sync is 3 parts
-    //     // 1. Get the latest block
-    //     // 2. Get all the blocks that we don't have
-    //     // 3. Find all new Txns that don't have the full Tx, and get them as full transactions 
-    //     //    and scan them, mainly to get the memos
-    //     let mut last_scanned_height = self.wallet.read().unwrap().last_scanned_height() as u64;
+    // @see https://github.com/little-slingshot/zecwallet-light-cli-forum/issues/92
+    #[cfg(not(feature = "zephyr_wasm"))]
+    fn do_sync_internal(&self, print_updates: bool, retry_count: u32) -> Result<JsonValue, String> {
+        // We can only do one sync at a time because we sync blocks in serial order
+        // If we allow multiple syncs, they'll all get jumbled up.
+        let _lock = self.sync_lock.lock().unwrap();
 
-    //     // This will hold the latest block fetched from the RPC
-    //     let latest_block = fetch_latest_block(&self.get_server_uri())?.height;
+        // See if we need to verify first
+        if !self.wallet.read().unwrap().is_sapling_tree_verified() {
+            match self.do_verify_from_last_checkpoint() {
+                Err(e) => return Err(format!("Checkpoint failed to verify with eror:{}.\nYou should rescan.", e)),
+                Ok(false) => return Err(format!("Checkpoint failed to verify: Verification returned false.\nYou should rescan.")),
+                _ => {}
+            }
+        }
+
+        // Sync is 3 parts
+        // 1. Get the latest block
+        // 2. Get all the blocks that we don't have
+        // 3. Find all new Txns that don't have the full Tx, and get them as full transactions 
+        //    and scan them, mainly to get the memos
+        let mut last_scanned_height = self.wallet.read().unwrap().last_scanned_height() as u64;
+
+        // This will hold the latest block fetched from the RPC
+        let latest_block = fetch_latest_block(&self.get_server_uri())?.height;
        
-    //     if latest_block < last_scanned_height {
-    //         let w = format!("Server's latest block({}) is behind ours({})", latest_block, last_scanned_height);
-    //         warn!("{}", w);
-    //         return Err(w);
-    //     }
+        if latest_block < last_scanned_height {
+            let w = format!("Server's latest block({}) is behind ours({})", latest_block, last_scanned_height);
+            warn!("{}", w);
+            return Err(w);
+        }
 
-    //     info!("Latest block is {}", latest_block);
+        info!("Latest block is {}", latest_block);
 
-    //     // Get the end height to scan to.
-    //     let scan_batch_size = 1000;
-    //     let mut end_height = std::cmp::min(last_scanned_height + scan_batch_size, latest_block);
+        // Get the end height to scan to.
+        let scan_batch_size = 1000;
+        let mut end_height = std::cmp::min(last_scanned_height + scan_batch_size, latest_block);
 
-    //     // If there's nothing to scan, just return
-    //     if last_scanned_height == latest_block {
-    //         info!("Nothing to sync, returning");
-    //         return Ok(object!{ "result" => "success" })
-    //     }
+        // If there's nothing to scan, just return
+        if last_scanned_height == latest_block {
+            info!("Nothing to sync, returning");
+            return Ok(object!{ "result" => "success" })
+        }
 
-    //     {
-    //         let mut status = self.sync_status.write().unwrap();
-    //         status.is_syncing = true;
-    //         status.synced_blocks = last_scanned_height;
-    //         status.total_blocks = latest_block;
-    //     }
+        {
+            let mut status = self.sync_status.write().unwrap();
+            status.is_syncing = true;
+            status.synced_blocks = last_scanned_height;
+            status.total_blocks = latest_block;
+        }
 
-    //     // Count how many bytes we've downloaded
-    //     let bytes_downloaded = Arc::new(AtomicUsize::new(0));
+        // Count how many bytes we've downloaded
+        let bytes_downloaded = Arc::new(AtomicUsize::new(0));
         
-    //     self.update_current_price();
+        self.update_current_price();
 
-    //     let mut total_reorg = 0;
+        let mut total_reorg = 0;
 
-    //     // Create a new threadpool (upto 8, atleast 2 threads) to scan with
-    //     let pool = ThreadPool::new(max(2, min(8, num_cpus::get())));
+        // Create a new threadpool (upto 8, atleast 2 threads) to scan with
+        let pool = ThreadPool::new(max(2, min(8, num_cpus::get())));
 
-    //     // Fetch CompactBlocks in increments
-    //     let mut pass = 0;
-    //     loop {
-    //         pass +=1 ;
-    //         // Collect all block times, because we'll need to update transparent tx
-    //         // datetime via the block height timestamp
-    //         let block_times = Arc::new(RwLock::new(HashMap::new()));
+        // Fetch CompactBlocks in increments
+        let mut pass = 0;
+        loop {
+            pass +=1 ;
+            // Collect all block times, because we'll need to update transparent tx
+            // datetime via the block height timestamp
+            let block_times = Arc::new(RwLock::new(HashMap::new()));
 
-    //         let local_light_wallet = self.wallet.clone();
-    //         let local_bytes_downloaded = bytes_downloaded.clone();
+            let local_light_wallet = self.wallet.clone();
+            let local_bytes_downloaded = bytes_downloaded.clone();
 
-    //         let start_height = last_scanned_height + 1;
+            let start_height = last_scanned_height + 1;
 
-    //         // Show updates only if we're syncing a lot of blocks
-    //         if print_updates && (latest_block - start_height) > 100 {
-    //             print!("Syncing {}/{}\r", start_height, latest_block);
-    //             io::stdout().flush().ok().expect("Could not flush stdout");
-    //         }
+            // Show updates only if we're syncing a lot of blocks
+            if print_updates && (latest_block - start_height) > 100 {
+                print!("Syncing {}/{}\r", start_height, latest_block);
+                io::stdout().flush().ok().expect("Could not flush stdout");
+            }
 
-    //         {
-    //             let mut status = self.sync_status.write().unwrap();
-    //             status.is_syncing = true;
-    //             status.synced_blocks = start_height;
-    //             status.total_blocks = latest_block;
-    //         }
+            {
+                let mut status = self.sync_status.write().unwrap();
+                status.is_syncing = true;
+                status.synced_blocks = start_height;
+                status.total_blocks = latest_block;
+            }
 
-    //         // Fetch compact blocks
-    //         info!("Fetching blocks {}-{}", start_height, end_height);
-    //         let block_times_inner = block_times.clone();
+            // Fetch compact blocks
+            info!("Fetching blocks {}-{}", start_height, end_height);
+            let block_times_inner = block_times.clone();
 
-    //         let last_invalid_height = Arc::new(AtomicI32::new(0));
-    //         let last_invalid_height_inner = last_invalid_height.clone();
+            let last_invalid_height = Arc::new(AtomicI32::new(0));
+            let last_invalid_height_inner = last_invalid_height.clone();
 
-    //         let tpool = pool.clone();
-    //         fetch_blocks(&self.get_server_uri(), start_height, end_height, pool.clone(),
-    //             move |encoded_block: &[u8], _| {
-    //                 // Process the block only if there were no previous errors
-    //                 if last_invalid_height_inner.load(Ordering::SeqCst) > 0 {
-    //                     return;
-    //                 }
+            let tpool = pool.clone();
+            fetch_blocks(&self.get_server_uri(), start_height, end_height, pool.clone(),
+                move |encoded_block: &[u8], _| {
+                    // Process the block only if there were no previous errors
+                    if last_invalid_height_inner.load(Ordering::SeqCst) > 0 {
+                        return;
+                    }
 
-    //                 // Parse the block and save it's time. We'll use this timestamp for 
-    //                 // transactions in this block that might belong to us.
-    //                 let block: Result<zcash_client_backend::proto::compact_formats::CompactBlock, _>
-    //                                     = protobuf::Message::parse_from_bytes(encoded_block);
-    //                 match block {
-    //                     Ok(b) => {
-    //                         block_times_inner.write().unwrap().insert(b.height, b.time);
-    //                     },
-    //                     Err(_) => {}
-    //                 }
+                    // Parse the block and save it's time. We'll use this timestamp for 
+                    // transactions in this block that might belong to us.
+                    let block: Result<zcash_client_backend::proto::compact_formats::CompactBlock, _>
+                                        = protobuf::Message::parse_from_bytes(encoded_block);
+                    match block {
+                        Ok(b) => {
+                            block_times_inner.write().unwrap().insert(b.height, b.time);
+                        },
+                        Err(_) => {}
+                    }
 
-    //                 if let Err(invalid_height) = local_light_wallet.read().unwrap().scan_block_with_pool(encoded_block, &tpool) {
-    //                     // Block at this height seems to be invalid, so invalidate up till that point
-    //                     last_invalid_height_inner.store(invalid_height, Ordering::SeqCst);
-    //                 };
+                    if let Err(invalid_height) = local_light_wallet.read().unwrap().scan_block_with_pool(encoded_block, &tpool) {
+                        // Block at this height seems to be invalid, so invalidate up till that point
+                        last_invalid_height_inner.store(invalid_height, Ordering::SeqCst);
+                    };
 
-    //                 local_bytes_downloaded.fetch_add(encoded_block.len(), Ordering::SeqCst);
-    //         })?;
+                    local_bytes_downloaded.fetch_add(encoded_block.len(), Ordering::SeqCst);
+            })?;
 
-    //         // Check if there was any invalid block, which means we might have to do a reorg
-    //         let invalid_height = last_invalid_height.load(Ordering::SeqCst);
-    //         if invalid_height > 0 {
-    //             total_reorg += self.wallet.read().unwrap().invalidate_block(invalid_height);
+            // Check if there was any invalid block, which means we might have to do a reorg
+            let invalid_height = last_invalid_height.load(Ordering::SeqCst);
+            if invalid_height > 0 {
+                total_reorg += self.wallet.read().unwrap().invalidate_block(invalid_height);
 
-    //             warn!("Invalidated block at height {}. Total reorg is now {}", invalid_height, total_reorg);
-    //         }
+                warn!("Invalidated block at height {}. Total reorg is now {}", invalid_height, total_reorg);
+            }
 
-    //         // Make sure we're not re-orging too much!
-    //         if total_reorg > (crate::lightwallet::MAX_REORG - 1) as u64 {
-    //             error!("Reorg has now exceeded {} blocks!", crate::lightwallet::MAX_REORG);
-    //             return Err(format!("Reorg has exceeded {} blocks. Aborting.", crate::lightwallet::MAX_REORG));
-    //         } 
+            // Make sure we're not re-orging too much!
+            if total_reorg > (crate::lightwallet::MAX_REORG - 1) as u64 {
+                error!("Reorg has now exceeded {} blocks!", crate::lightwallet::MAX_REORG);
+                return Err(format!("Reorg has exceeded {} blocks. Aborting.", crate::lightwallet::MAX_REORG));
+            } 
             
-    //         if invalid_height > 0 {
-    //             // Reset the scanning heights
-    //             last_scanned_height = (invalid_height - 1) as u64;
-    //             end_height = std::cmp::min(last_scanned_height + scan_batch_size, latest_block);
+            if invalid_height > 0 {
+                // Reset the scanning heights
+                last_scanned_height = (invalid_height - 1) as u64;
+                end_height = std::cmp::min(last_scanned_height + scan_batch_size, latest_block);
 
-    //             warn!("Reorg: reset scanning from {} to {}", last_scanned_height, end_height);
+                warn!("Reorg: reset scanning from {} to {}", last_scanned_height, end_height);
 
-    //             continue;
-    //         }
+                continue;
+            }
 
-    //         // If it got here, that means the blocks are scanning properly now. 
-    //         // So, reset the total_reorg
-    //         total_reorg = 0;
+            // If it got here, that means the blocks are scanning properly now. 
+            // So, reset the total_reorg
+            total_reorg = 0;
 
-    //         // We'll also fetch all the txids that our transparent addresses are involved with
-    //         {
-    //             // Copy over addresses so as to not lock up the wallet, which we'll use inside the callback below. 
-    //             let addresses = self.wallet.read().unwrap()
-    //                                 .taddresses.read().unwrap().iter().map(|a| a.clone())
-    //                                 .collect::<Vec<String>>();
+            // We'll also fetch all the txids that our transparent addresses are involved with
+            {
+                // Copy over addresses so as to not lock up the wallet, which we'll use inside the callback below. 
+                let addresses = self.wallet.read().unwrap()
+                                    .taddresses.read().unwrap().iter().map(|a| a.clone())
+                                    .collect::<Vec<String>>();
                 
-    //             // Create a channel so the fetch_transparent_txids can send the results back
-    //             let (ctx, crx) = channel();
-    //             let num_addresses = addresses.len();
+                // Create a channel so the fetch_transparent_txids can send the results back
+                let (ctx, crx) = channel();
+                let num_addresses = addresses.len();
 
-    //             for address in addresses {
-    //                 let wallet = self.wallet.clone();
-    //                 let block_times_inner = block_times.clone();
+                for address in addresses {
+                    let wallet = self.wallet.clone();
+                    let block_times_inner = block_times.clone();
 
-    //                 // If this is the first pass after a retry, fetch older t address txids too, becuse
-    //                 // they might have been missed last time.
-    //                 let transparent_start_height = if pass == 1 && retry_count > 0 {
-    //                     start_height - scan_batch_size
-    //                 } else {
-    //                     start_height
-    //                 };
+                    // If this is the first pass after a retry, fetch older t address txids too, becuse
+                    // they might have been missed last time.
+                    let transparent_start_height = if pass == 1 && retry_count > 0 {
+                        start_height - scan_batch_size
+                    } else {
+                        start_height
+                    };
 
-    //                 let pool = pool.clone();
-    //                 let server_uri = self.get_server_uri();
-    //                 let ctx = ctx.clone();
+                    let pool = pool.clone();
+                    let server_uri = self.get_server_uri();
+                    let ctx = ctx.clone();
 
-    //                 pool.execute(move || {
-    //                     // Fetch the transparent transactions for this address, and send the results 
-    //                     // via the channel
-    //                     let r = fetch_transparent_txids(&server_uri, address, transparent_start_height, end_height,
-    //                         move |tx_bytes: &[u8], height: u64| {
-    //                             let tx = Transaction::read(tx_bytes).unwrap();
+                    pool.execute(move || {
+                        // Fetch the transparent transactions for this address, and send the results 
+                        // via the channel
+                        let r = fetch_transparent_txids(&server_uri, address, transparent_start_height, end_height,
+                            move |tx_bytes: &[u8], height: u64| {
+                                let tx = Transaction::read(tx_bytes).unwrap();
 
-    //                             // Scan this Tx for transparent inputs and outputs
-    //                             let datetime = block_times_inner.read().unwrap().get(&height).map(|v| *v).unwrap_or(0);
-    //                             wallet.read().unwrap().scan_full_tx(&tx, height as i32, datetime as u64); 
-    //                     });
-    //                     ctx.send(r).unwrap();
-    //                 });
-    //             }
+                                // Scan this Tx for transparent inputs and outputs
+                                let datetime = block_times_inner.read().unwrap().get(&height).map(|v| *v).unwrap_or(0);
+                                wallet.read().unwrap().scan_full_tx(&tx, height as i32, datetime as u64); 
+                        });
+                        ctx.send(r).unwrap();
+                    });
+                }
 
-    //             // Collect all results from the transparent fetches, and make sure everything was OK. 
-    //             // If it was not, we return an error, which will go back to the retry
-    //             crx.iter().take(num_addresses).collect::<Result<Vec<()>, String>>()?;
-    //         }           
+                // Collect all results from the transparent fetches, and make sure everything was OK. 
+                // If it was not, we return an error, which will go back to the retry
+                crx.iter().take(num_addresses).collect::<Result<Vec<()>, String>>()?;
+            }           
             
-    //         // Do block height accounting
-    //         last_scanned_height = end_height;
-    //         end_height = last_scanned_height + scan_batch_size;
+            // Do block height accounting
+            last_scanned_height = end_height;
+            end_height = last_scanned_height + scan_batch_size;
 
-    //         if last_scanned_height >= latest_block {
-    //             break;
-    //         } else if end_height > latest_block {
-    //             end_height = latest_block;
-    //         }
-    //     }
+            if last_scanned_height >= latest_block {
+                break;
+            } else if end_height > latest_block {
+                end_height = latest_block;
+            }
+        }
 
-    //     if print_updates{
-    //         println!(""); // New line to finish up the updates
-    //     }
+        if print_updates{
+            println!(""); // New line to finish up the updates
+        }
 
-    //     info!("Synced to {}, Downloaded {} kB", latest_block, bytes_downloaded.load(Ordering::SeqCst) / 1024);
-    //     {
-    //         let mut status = self.sync_status.write().unwrap();
-    //         status.is_syncing = false;
-    //         status.synced_blocks = latest_block;
-    //         status.total_blocks = latest_block;
-    //     }
+        info!("Synced to {}, Downloaded {} kB", latest_block, bytes_downloaded.load(Ordering::SeqCst) / 1024);
+        {
+            let mut status = self.sync_status.write().unwrap();
+            status.is_syncing = false;
+            status.synced_blocks = latest_block;
+            status.total_blocks = latest_block;
+        }
 
-    //     // Get the Raw transaction for all the wallet transactions
+        // Get the Raw transaction for all the wallet transactions
 
-    //     // We need to first copy over the Txids from the wallet struct, because
-    //     // we need to free the read lock from here (Because we'll self.wallet.txs later)
-    //     let mut txids_to_fetch: Vec<(TxId, i32)> = self.wallet.read().unwrap().txs.read().unwrap().values()
-    //                                                     .filter(|wtx| wtx.full_tx_scanned == false)
-    //                                                     .map(|wtx| (wtx.txid.clone(), wtx.block))
-    //                                                     .collect::<Vec<(TxId, i32)>>();
+        // We need to first copy over the Txids from the wallet struct, because
+        // we need to free the read lock from here (Because we'll self.wallet.txs later)
+        let mut txids_to_fetch: Vec<(TxId, i32)> = self.wallet.read().unwrap().txs.read().unwrap().values()
+                                                        .filter(|wtx| wtx.full_tx_scanned == false)
+                                                        .map(|wtx| (wtx.txid.clone(), wtx.block))
+                                                        .collect::<Vec<(TxId, i32)>>();
 
-    //     info!("Fetching {} new txids", txids_to_fetch.len());
-    //     txids_to_fetch.sort();
-    //     txids_to_fetch.dedup();
+        info!("Fetching {} new txids", txids_to_fetch.len());
+        txids_to_fetch.sort();
+        txids_to_fetch.dedup();
 
-    //     let result: Vec<Result<(), String>> = {
-    //         // Fetch all the txids in a parallel iterator
-    //         use rayon::prelude::*;
+        let result: Vec<Result<(), String>> = {
+            // Fetch all the txids in a parallel iterator
+            use rayon::prelude::*;
 
-    //         let light_wallet_clone = self.wallet.clone();
-    //         let server_uri = self.get_server_uri();
+            let light_wallet_clone = self.wallet.clone();
+            let server_uri = self.get_server_uri();
 
-    //         txids_to_fetch.par_iter().map(|(txid, height)| {
-    //             info!("Fetching full Tx: {}", txid);
+            txids_to_fetch.par_iter().map(|(txid, height)| {
+                info!("Fetching full Tx: {}", txid);
 
-    //             match fetch_full_tx(&server_uri, *txid) {
-    //                 Ok(tx_bytes) => {
-    //                     let tx = Transaction::read(&tx_bytes[..]).unwrap();
+                match fetch_full_tx(&server_uri, *txid) {
+                    Ok(tx_bytes) => {
+                        let tx = Transaction::read(&tx_bytes[..]).unwrap();
     
-    //                     light_wallet_clone.read().unwrap().scan_full_tx(&tx, *height, 0);
-    //                     Ok(())
-    //                 },
-    //                 Err(e) => Err(e)
-    //             }
-    //         }).collect()
-    //     };
+                        light_wallet_clone.read().unwrap().scan_full_tx(&tx, *height, 0);
+                        Ok(())
+                    },
+                    Err(e) => Err(e)
+                }
+            }).collect()
+        };
         
-    //     // Wait for all the fetches to finish.
-    //     match result.into_iter().collect::<Result<Vec<()>, String>>() {
-    //         Ok(_) => Ok(object!{
-    //             "result" => "success",
-    //             "latest_block" => latest_block,
-    //             "downloaded_bytes" => bytes_downloaded.load(Ordering::SeqCst)
-    //         }),
-    //         Err(e) => Err(format!("Error fetching all txns for memos: {}", e))
-    //     }        
-    // }// do_sync_internal()
+        // Wait for all the fetches to finish.
+        match result.into_iter().collect::<Result<Vec<()>, String>>() {
+            Ok(_) => Ok(object!{
+                "result" => "success",
+                "latest_block" => latest_block,
+                "downloaded_bytes" => bytes_downloaded.load(Ordering::SeqCst)
+            }),
+            Err(e) => Err(format!("Error fetching all txns for memos: {}", e))
+        }        
+    }// do_sync_internal()
 
     // @see https://github.com/little-slingshot/zecwallet-light-cli-forum/issues/91#issuecomment-1126202704
     // pub fn do_shield(&self, address: Option<String>) -> Result<String, String> {
