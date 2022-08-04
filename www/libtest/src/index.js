@@ -55,17 +55,20 @@ async function main(){
 
 
 
-  // We actually do not expect this to return corectly, as such a command does not exist...
   await expect(
     async ()=>await litelib_execute('update_historical_prices', 'no-params'), // (cmd: String, args_list: String)
     `Running litelib_execute('update_historical_prices') command`
   );
 
 
-  // We actually do not expect this to return corectly, as such a command does not exist...
   await expect(
     async ()=>await litelib_execute('update_current_price', 'no-params'), // (cmd: String, args_list: String)
     `Running litelib_execute('update_current_price') command`
+  );
+
+  await expect(
+    async ()=>await litelib_execute('do_verify_from_last_checkpoint', 'no-params'), // (cmd: String, args_list: String)
+    `Running litelib_execute('do_verify_from_last_checkpoint') command`
   );
 
 

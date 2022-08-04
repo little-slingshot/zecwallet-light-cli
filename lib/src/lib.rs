@@ -191,6 +191,15 @@ pub async fn litelib_execute(cmd: String, args_list: String) -> String {
       resp = String::from("called client.update_current_price()");
 
     }
+    else if cmd == "do_verify_from_last_checkpoint"  {
+      console::log_1(&"Running lightclient.do_verify_from_last_checkpoint()".into());
+      
+      let result = lightclient.do_verify_from_last_checkpoint().await;
+
+      // resp = String::from("called client.do_verify_from_last_checkpoint()");
+      resp = format!("result of client.do_verify_from_last_checkpoint() = {:?}", result);
+
+    }
     else{
       panic!("Unknown command {}", cmd);
     }
