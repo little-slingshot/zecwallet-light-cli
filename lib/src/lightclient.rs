@@ -1591,23 +1591,23 @@ impl LightClient {
         }
     }
 
-    #[cfg(feature = "zephyr_wasm")]
-    async fn do_sync_internal(&self, print_updates: bool, retry_count: u32) -> Result<JsonValue, String> {
-        // TODO: replace stub with actual implementation
-        Ok(JsonValue::Null)
-    }
+    // #[cfg(feature = "zephyr_wasm")]
+    // async fn do_sync_internal(&self, print_updates: bool, retry_count: u32) -> Result<JsonValue, String> {
+    //     // TODO: replace stub with actual implementation
+    //     Ok(JsonValue::Null)
+    // }
 
 
     // @see https://github.com/little-slingshot/zecwallet-light-cli-forum/issues/92
-    #[cfg(not(feature = "zephyr_wasm"))]
-    fn do_sync_internal(&self, print_updates: bool, retry_count: u32) -> Result<JsonValue, String> {
+    // [cfg(not(feature = "zephyr_wasm"))]
+    async fn do_sync_internal(&self, print_updates: bool, retry_count: u32) -> Result<JsonValue, String> {
         // We can only do one sync at a time because we sync blocks in serial order
         // If we allow multiple syncs, they'll all get jumbled up.
         let _lock = self.sync_lock.lock().unwrap();
 
         // See if we need to verify first
         if !self.wallet.read().unwrap().is_sapling_tree_verified() {
-            match self.do_verify_from_last_checkpoint() {
+            match self.do_verify_from_last_checkpoint().await {
                 Err(e) => return Err(format!("Checkpoint failed to verify with eror:{}.\nYou should rescan.", e)),
                 Ok(false) => return Err(format!("Checkpoint failed to verify: Verification returned false.\nYou should rescan.")),
                 _ => {}
@@ -1622,7 +1622,7 @@ impl LightClient {
         let mut last_scanned_height = self.wallet.read().unwrap().last_scanned_height() as u64;
 
         // This will hold the latest block fetched from the RPC
-        let latest_block = fetch_latest_block(&self.get_server_uri())?.height;
+        let latest_block = fetch_latest_block(&self.get_server_uri()).await?.height;
        
         if latest_block < last_scanned_height {
             let w = format!("Server's latest block({}) is behind ours({})", latest_block, last_scanned_height);
@@ -1652,7 +1652,7 @@ impl LightClient {
         // Count how many bytes we've downloaded
         let bytes_downloaded = Arc::new(AtomicUsize::new(0));
         
-        self.update_current_price();
+        self.update_current_price().await;
 
         let mut total_reorg = 0;
 
@@ -1687,37 +1687,66 @@ impl LightClient {
 
             // Fetch compact blocks
             info!("Fetching blocks {}-{}", start_height, end_height);
+            
+            // This was meant to be used in threads of ThreadPool, but as we remove
+            // pooling, those Arc&RwLocks will looks confusing. Keep that in mind.
             let block_times_inner = block_times.clone();
 
             let last_invalid_height = Arc::new(AtomicI32::new(0));
             let last_invalid_height_inner = last_invalid_height.clone();
 
             let tpool = pool.clone();
-            fetch_blocks(&self.get_server_uri(), start_height, end_height, pool.clone(),
-                move |encoded_block: &[u8], _| {
-                    // Process the block only if there were no previous errors
-                    if last_invalid_height_inner.load(Ordering::SeqCst) > 0 {
-                        return;
-                    }
+            let block_range = fetch_blocks2(&self.get_server_uri(), start_height, end_height).await?;
 
-                    // Parse the block and save it's time. We'll use this timestamp for 
-                    // transactions in this block that might belong to us.
-                    let block: Result<zcash_client_backend::proto::compact_formats::CompactBlock, _>
-                                        = protobuf::Message::parse_from_bytes(encoded_block);
-                    match block {
-                        Ok(b) => {
-                            block_times_inner.write().unwrap().insert(b.height, b.time);
-                        },
-                        Err(_) => {}
-                    }
+            for (encoded_block_vec, _) in block_range {
+                let encoded_block : &[u8] = &&encoded_block_vec;
 
-                    if let Err(invalid_height) = local_light_wallet.read().unwrap().scan_block_with_pool(encoded_block, &tpool) {
+                if last_invalid_height_inner.load(Ordering::SeqCst) > 0 {
+                    continue; // replicate semantics of just passing this error
+                }
+
+                let block : Result<CompactBlock, _> = protobuf::Message::parse_from_bytes(encoded_block);
+
+                match block {
+                    Ok(b)=>{
+                        block_times_inner.write().unwrap().insert(b.height, b.time);
+                    },
+                    Err(_) => {}
+                }
+
+                if let Err(invalid_height) = local_light_wallet.read().unwrap().scan_block_current_thread(encoded_block) {
                         // Block at this height seems to be invalid, so invalidate up till that point
-                        last_invalid_height_inner.store(invalid_height, Ordering::SeqCst);
-                    };
+                        last_invalid_height_inner.store(invalid_height, Ordering::SeqCst);                    
+                }
 
-                    local_bytes_downloaded.fetch_add(encoded_block.len(), Ordering::SeqCst);
-            })?;
+                local_bytes_downloaded.fetch_add(encoded_block.len(), Ordering::SeqCst);                
+
+            }
+
+            // hello(move |encoded_block: &[u8], _| {
+            //         // Process the block only if there were no previous errors
+            //         if last_invalid_height_inner.load(Ordering::SeqCst) > 0 {
+            //             return;
+            //         }
+
+            //         // Parse the block and save it's time. We'll use this timestamp for 
+            //         // transactions in this block that might belong to us.
+            //         let block: Result<zcash_client_backend::proto::compact_formats::CompactBlock, _>
+            //                             = protobuf::Message::parse_from_bytes(encoded_block);
+            //         match block {
+            //             Ok(b) => {
+            //                 block_times_inner.write().unwrap().insert(b.height, b.time);
+            //             },
+            //             Err(_) => {}
+            //         }
+
+            //         if let Err(invalid_height) = local_light_wallet.read().unwrap().scan_block_with_pool(encoded_block, &tpool) {
+            //             // Block at this height seems to be invalid, so invalidate up till that point
+            //             last_invalid_height_inner.store(invalid_height, Ordering::SeqCst);
+            //         };
+
+            //         local_bytes_downloaded.fetch_add(encoded_block.len(), Ordering::SeqCst);
+            // })?;
 
             // Check if there was any invalid block, which means we might have to do a reorg
             let invalid_height = last_invalid_height.load(Ordering::SeqCst);
@@ -1755,7 +1784,6 @@ impl LightClient {
                                     .collect::<Vec<String>>();
                 
                 // Create a channel so the fetch_transparent_txids can send the results back
-                let (ctx, crx) = channel();
                 let num_addresses = addresses.len();
 
                 for address in addresses {
@@ -1770,28 +1798,52 @@ impl LightClient {
                         start_height
                     };
 
-                    let pool = pool.clone();
                     let server_uri = self.get_server_uri();
-                    let ctx = ctx.clone();
 
-                    pool.execute(move || {
+                    // pool.execute(move || 
+                    {
                         // Fetch the transparent transactions for this address, and send the results 
-                        // via the channel
-                        let r = fetch_transparent_txids(&server_uri, address, transparent_start_height, end_height,
-                            move |tx_bytes: &[u8], height: u64| {
-                                let tx = Transaction::read(tx_bytes).unwrap();
+                        let r2 = fetch_transparent_txids2(&server_uri, address, transparent_start_height, end_height).await;
+                        match r2 {
+                            Ok(transaction_range)=>{
+                                for (tx, height) in transaction_range {
+                                    // let tx_bytes = &(ttx.data as [u8]);
+                                    // let tx_bytes : &[u8]= ttx.data;
+                                    // let tx = Transaction::read(tx_bytes).unwrap();
+                                    // let tx = Transaction::read(tx_bytes.try_into().unwrap()).unwrap();
+                                    // let tx = Transaction::from_data(ttx.data).unwrap();
+                                    let datetime = block_times_inner.read().unwrap().get(&height).map(|v| *v).unwrap_or(0);
+                                    wallet.read().unwrap().scan_full_tx(&tx, height as i32, datetime as u64); 
+                                }
+                            },
+                            Err(err_string)=>{
+                                // TODO: what do we do in this case? how to make sure we follow the semantics of the parent?
+                                panic!("What do we do when we fail fetching transparent ids?");
+                            }
+                        };
 
-                                // Scan this Tx for transparent inputs and outputs
-                                let datetime = block_times_inner.read().unwrap().get(&height).map(|v| *v).unwrap_or(0);
-                                wallet.read().unwrap().scan_full_tx(&tx, height as i32, datetime as u64); 
-                        });
-                        ctx.send(r).unwrap();
-                    });
+                        // // via the channel
+                        // let r = fetch_transparent_txids(&server_uri, address, transparent_start_height, end_height,
+                        //     move |tx_bytes: &[u8], height: u64| {
+                        //         let tx = Transaction::read(tx_bytes).unwrap();
+
+                        //         // Scan this Tx for transparent inputs and outputs
+                        //         let datetime = block_times_inner.read().unwrap().get(&height).map(|v| *v).unwrap_or(0);
+                        //         wallet.read().unwrap().scan_full_tx(&tx, height as i32, datetime as u64); 
+                        // });
+                        // ctx.send(r).unwrap();
+                    }
+                    // );// pool.execute()
                 }
 
                 // Collect all results from the transparent fetches, and make sure everything was OK. 
                 // If it was not, we return an error, which will go back to the retry
-                crx.iter().take(num_addresses).collect::<Result<Vec<()>, String>>()?;
+                // crx.iter().take(num_addresses).collect::<Result<Vec<()>, String>>()?;
+
+                // LS> What is the intent of this ^^^^^^^ entire line? 
+                // LS> It's not super clear how come we can have error in this channel? 
+                // LS> I think it's just syncing mechanism (for channels), which basically just collects all the results from the iterator, and ends 
+                // LS> after given amount of results were received. That's all it can do. I cannot unwrap the actual Results.
             }           
             
             // Do block height accounting
@@ -1832,15 +1884,16 @@ impl LightClient {
 
         let result: Vec<Result<(), String>> = {
             // Fetch all the txids in a parallel iterator
-            use rayon::prelude::*;
+            // use rayon::prelude::*;
 
             let light_wallet_clone = self.wallet.clone();
             let server_uri = self.get_server_uri();
 
-            txids_to_fetch.par_iter().map(|(txid, height)| {
+            // txids_to_fetch.par_iter().map(|(txid, height)| {
+            txids_to_fetch.iter().map(|(txid, height)| {
                 info!("Fetching full Tx: {}", txid);
 
-                match fetch_full_tx(&server_uri, *txid) {
+                match fetch_full_tx_sync_dummy(&server_uri, *txid) {
                     Ok(tx_bytes) => {
                         let tx = Transaction::read(&tx_bytes[..]).unwrap();
     

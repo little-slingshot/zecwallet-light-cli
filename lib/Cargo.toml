@@ -22,6 +22,7 @@ web-sys = { version = "0.3.39", features = ['console'] }
 base58 = "0.1.0"
 base64 = "0.12.3"
 log = "0.4"
+console_log = "0.2"
 # log4rs = "0.8.3"
 dirs = "2.0.2"
 http = "0.2"

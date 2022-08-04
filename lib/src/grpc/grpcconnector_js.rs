@@ -710,6 +710,10 @@ where F : Fn(&[u8], u64) {
 
 
 
+pub fn fetch_full_tx_sync_dummy(uri: &http::Uri, txid: TxId) -> Result<Vec<u8>, String> {
+  panic!("fetch_full_tx_sync_dummy() called!");
+}
+
 // **********************************************************************
 // **********************************************************************
 // *** fetch_full_tx
