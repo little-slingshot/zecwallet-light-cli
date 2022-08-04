@@ -183,6 +183,14 @@ pub async fn litelib_execute(cmd: String, args_list: String) -> String {
       resp = String::from("called client.update_historical_prices()");
 
     }
+    else if cmd == "update_current_price"  {
+      console::log_1(&"Running lightclient.update_current_price()".into());
+      
+      lightclient.update_current_price().await;
+
+      resp = String::from("called client.update_current_price()");
+
+    }
     else{
       panic!("Unknown command {}", cmd);
     }

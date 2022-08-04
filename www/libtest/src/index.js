@@ -24,7 +24,10 @@ async function main(){
     log(`${fname}()`);
   })
 
-  const litelib_execute = wasmImport.litelib_execute;
+  const litelib_execute = (...args)=>{
+    console.log(`calling litelib_execute(${args[0]}, ${args[1]})...`);
+    return wasmImport.litelib_execute(...args);
+  }
   const litelib_initialize_existing = wasmImport.litelib_initialize_existing;
   const litelib_initialize_new = wasmImport.litelib_initialize_new;
   const litelib_initialize_new_from_phrase = wasmImport.litelib_initialize_new_from_phrase;
@@ -56,6 +59,13 @@ async function main(){
   await expect(
     async ()=>await litelib_execute('update_historical_prices', 'no-params'), // (cmd: String, args_list: String)
     `Running litelib_execute('update_historical_prices') command`
+  );
+
+
+  // We actually do not expect this to return corectly, as such a command does not exist...
+  await expect(
+    async ()=>await litelib_execute('update_current_price', 'no-params'), // (cmd: String, args_list: String)
+    `Running litelib_execute('update_current_price') command`
   );
 
 

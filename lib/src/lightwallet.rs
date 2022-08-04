@@ -69,7 +69,10 @@ pub const MAX_REORG: usize = 100;
 pub const GAP_RULE_UNUSED_ADDRESSES: usize = if cfg!(any(target_os="ios", target_os="android")) { 0 } else { 5 };
 
 pub fn now() -> u64 {
-    SystemTime::now().duration_since(SystemTime::UNIX_EPOCH).unwrap().as_secs()
+    // because this is grpcconnector_js it is _only_ meant to be built with WASM
+    // so no need to do conditional compilation here. Everything here must use WASM-compatible features
+    (js_sys::Date::now() / 1000.0) as u64
+    // SystemTime::now().duration_since(SystemTime::UNIX_EPOCH).unwrap().as_secs()
 }
 
 /// Sha256(Sha256(value))

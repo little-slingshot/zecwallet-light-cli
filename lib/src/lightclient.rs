@@ -1470,7 +1470,7 @@ impl LightClient {
     }
 
     // @see https://github.com/little-slingshot/zecwallet-light-cli-forum/issues/94
-    async fn update_current_price(&self) {
+    pub async fn update_current_price(&self) {
         // Get the zec price from the server
         match grpcconnector::get_current_zec_price(&self.get_server_uri()).await {
             Ok(p) => {

@@ -29,6 +29,8 @@ impl Command for SyncCommand {
     }
 
     fn exec(&self, _args: &[&str], lightclient: &LightClient) -> String {
+        // match lightclient.do_sync(true).await { << Error is due to missing await like shown here
+        // but this function is sync, so we can't really do anything here... 
         match lightclient.do_sync(true) {
             Ok(j) => j.pretty(2),
             Err(e) => e
