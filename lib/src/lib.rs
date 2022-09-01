@@ -81,7 +81,7 @@ pub async fn litelib_initialize_new(entropy: String) -> String {
   };
 
   // let entropy: String = "entropy123".to_string();
-  let lightclient = match LightClient::new(&config, latest_block_height, entropy) { 
+  let lightclient = match LightClient::new(&config, latest_block_height, entropy).await { 
       Ok(l) => l,
       Err(e) => {
           return format!("Error calling LightClient::new(): {}", e);
