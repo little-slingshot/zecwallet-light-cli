@@ -1723,8 +1723,7 @@ impl LightWallet {
         tree: &mut CommitmentTree<Node>,
         existing_witnesses: &mut [&mut IncrementalWitness<Node>],
         block_witnesses: &mut [&mut IncrementalWitness<Node>],
-        new_witnesses: &mut [&mut IncrementalWitness<Node>],
-        pool: &ThreadPool
+        new_witnesses: &mut [&mut IncrementalWitness<Node>]
     ) -> Option<WalletShieldedOutput> {
         let cmu = output.cmu().ok()?;
         let epk = output.epk().ok()?;
@@ -1738,7 +1737,8 @@ impl LightWallet {
             let ct = ct.clone();
             let tx = tx.clone();
 
-            pool.execute(move || {
+            // pool.execute(move || {
+            let execute = || {
                 let m = try_sapling_compact_note_decryption(
                     &MAIN_NETWORK, BlockHeight::from_u32(height as u32), &ivk, &epk, &cmu, &ct);
                 let r = match m {
@@ -1754,7 +1754,9 @@ impl LightWallet {
                     Ok(_) => {},
                     Err(e) => println!("Send error {:?}", e)
                 }
-            });
+            };
+
+            execute();
         });
 
         // Increment tree and witnesses
@@ -1762,10 +1764,15 @@ impl LightWallet {
 
         // For existing witnesses, do the insertion parallely, so that we can speed it up, since there
         // are likely to be many existing witnesses
-        {
-            use rayon::prelude::*;
+        // {
+        //     use rayon::prelude::*;
 
-            existing_witnesses.par_iter_mut().for_each(|witness| {
+        //     existing_witnesses.par_iter_mut().for_each(|witness| {
+        //         witness.append(node).unwrap();
+        //     });
+        // }
+        {
+            existing_witnesses.iter_mut().for_each(|witness| {
                 witness.append(node).unwrap();
             });
         }
@@ -1820,7 +1827,7 @@ impl LightWallet {
     ///
     /// The given [`CommitmentTree`] and existing [`IncrementalWitness`]es are
     /// incremented appropriately.
-    pub fn scan_block_internal(
+    pub fn scan_block_for_meaningful_transactions(
         &self,
         block: CompactBlock,
         extfvks: &[ExtendedFullViewingKey],
@@ -1909,8 +1916,7 @@ impl LightWallet {
                         tree,
                         existing_witnesses,
                         &mut block_witnesses,
-                        &mut new_witnesses,
-                        pool
+                        &mut new_witnesses
                     ) {
                         shielded_outputs.push(output);
                     }
@@ -1948,7 +1954,7 @@ impl LightWallet {
         self.scan_block_with_pool(&block_bytes, &ThreadPool::new(1))
     }
 
-    pub fn scan_block_current_thread(&self, block_bytes: &[u8]) -> Result<(), i32>{
+    pub fn scan_block_current_thread(&self, _block_bytes: &[u8]) -> Result<(), i32>{
         error!("Not implemented lightwallet#scan_block_current_thread()");
         Ok(())
     }
@@ -2078,7 +2084,7 @@ impl LightWallet {
                     .flat_map(|tx| tx.notes.iter_mut().filter_map(|nd| nd.witnesses.last_mut()))
                     .collect();
 
-                self.scan_block_internal(
+                self.scan_block_for_meaningful_transactions(
                     block.clone(),
                     &extfvks,
                     nf_refs,
