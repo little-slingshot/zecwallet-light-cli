@@ -4,7 +4,6 @@ use std::convert::TryFrom;
 use std::io::{self, Read, Write};
 use std::io::{Error, ErrorKind};
 use std::sync::{Arc, RwLock};
-use std::time::{SystemTime};
 
 use std::sync::mpsc::channel;
 use threadpool::ThreadPool;

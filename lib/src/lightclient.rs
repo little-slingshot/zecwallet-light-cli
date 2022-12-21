@@ -486,7 +486,7 @@ impl LightClient {
 
     /// Method to create a test-only version of the LightClient
     #[allow(dead_code)]
-    pub fn unconnected(seed_phrase: String, entropy: String, dir: Option<String>) -> io::Result<Self> {
+    pub async fn unconnected(seed_phrase: String, entropy: String, dir: Option<String>) -> io::Result<Self> {
         let config = LightClientConfig::create_unconnected("test".to_string(), dir);
         let mut l = LightClient {
                 wallet          : Arc::new(RwLock::new(LightWallet::new(Some(seed_phrase), Some(entropy), &config, 0)?)),
@@ -497,7 +497,7 @@ impl LightClient {
                 sync_status     : Arc::new(RwLock::new(WalletStatus::new())),
             };
 
-        l.set_wallet_initial_state(0);
+        l.set_wallet_initial_state(0).await;
         
         #[cfg(feature = "embed_params")]
         l.read_sapling_params();
@@ -1351,13 +1351,13 @@ impl LightClient {
     }
     
 
-    pub fn clear_state(&self) {
+    pub async fn clear_state(&self) {
         // First, clear the state from the wallet
         self.wallet.read().unwrap().clear_blocks();
 
         // Then set the initial block
         let birthday = self.wallet.read().unwrap().get_birthday();
-        self.set_wallet_initial_state(birthday);
+        self.set_wallet_initial_state(birthday).await;
         info!("Cleared wallet state, with birthday at {}", birthday);
     }
 
@@ -1657,7 +1657,7 @@ impl LightClient {
         let mut total_reorg = 0;
 
         // Create a new threadpool (upto 8, atleast 2 threads) to scan with
-        let pool = ThreadPool::new(max(2, min(8, num_cpus::get())));
+        // let pool = ThreadPool::new(max(2, min(8, num_cpus::get())));
 
         // Fetch CompactBlocks in increments
         let mut pass = 0;
@@ -1695,7 +1695,7 @@ impl LightClient {
             let last_invalid_height = Arc::new(AtomicI32::new(0));
             let last_invalid_height_inner = last_invalid_height.clone();
 
-            let tpool = pool.clone();
+            // let tpool = pool.clone();
             let block_range = fetch_blocks2(&self.get_server_uri(), start_height, end_height).await?;
 
             for (encoded_block_vec, _) in block_range {
@@ -1783,9 +1783,6 @@ impl LightClient {
                                     .taddresses.read().unwrap().iter().map(|a| a.clone())
                                     .collect::<Vec<String>>();
                 
-                // Create a channel so the fetch_transparent_txids can send the results back
-                let num_addresses = addresses.len();
-
                 for address in addresses {
                     let wallet = self.wallet.clone();
                     let block_times_inner = block_times.clone();
@@ -1816,7 +1813,7 @@ impl LightClient {
                                     wallet.read().unwrap().scan_full_tx(&tx, height as i32, datetime as u64); 
                                 }
                             },
-                            Err(err_string)=>{
+                            Err(_err_string)=>{
                                 // TODO: what do we do in this case? how to make sure we follow the semantics of the parent?
                                 panic!("What do we do when we fail fetching transparent ids?");
                             }

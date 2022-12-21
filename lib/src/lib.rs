@@ -117,7 +117,7 @@ pub async fn litelib_initialize_new(entropy: String) -> String {
 
 /// Restore a wallet from the seed phrase
 #[wasm_bindgen]
-pub async fn litelib_initialize_new_from_phrase(seed: String, birthday: u64) -> String {
+pub async fn litelib_initialize_new_from_phrase(_seed: String, _birthday: u64) -> String {
   utils::set_panic_hook();
   return "Restore a wallet from the seed phrase".to_string();
 }
@@ -125,14 +125,14 @@ pub async fn litelib_initialize_new_from_phrase(seed: String, birthday: u64) -> 
 
 // Initialize a new lightclient and store its value
 #[wasm_bindgen]
-pub async fn litelib_initialize_existing(wallet_hex: String) -> String {
+pub async fn litelib_initialize_existing(_wallet_hex: String) -> String {
   utils::set_panic_hook();
   return "Initialize a new lightclient and store its value".to_string();
 }
 
 
 #[wasm_bindgen]
-pub async fn litelib_execute(cmd: String, args_list: String) -> String {
+pub async fn litelib_execute(cmd: String, _args_list: String) -> String {
   utils::set_panic_hook();
   let resp: String;
   {
