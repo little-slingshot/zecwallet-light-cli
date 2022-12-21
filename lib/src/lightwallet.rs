@@ -1834,7 +1834,6 @@ impl LightWallet {
         nullifiers: Vec<(Vec<u8>, usize)>,
         tree: &mut CommitmentTree<Node>,
         existing_witnesses: &mut [&mut IncrementalWitness<Node>],
-        pool: &ThreadPool
     ) -> Vec<zcash_client_backend::wallet::WalletTx> {
         let mut wtxs: Vec<zcash_client_backend::wallet::WalletTx> = vec![];
         let ivks = extfvks.iter().map(|extfvk| extfvk.fvk.vk.ivk()).collect::<Vec<_>>();
@@ -1847,7 +1846,7 @@ impl LightWallet {
             {
                 let nullifiers = nullifiers.clone();
                 let tx = tx.clone();
-                pool.execute(move || {
+                let execute = move || {
                     // Check for spent notes
                     // The only step that is not constant-time is the filter() at the end.
                     let shielded_spends: Vec<_> = tx
@@ -1880,7 +1879,8 @@ impl LightWallet {
                     ctx.send((shielded_spends, spent_from_accounts)).unwrap();
 
                     drop(ctx);
-                });
+                };
+                execute();
             }
 
 
@@ -2089,8 +2089,7 @@ impl LightWallet {
                     &extfvks,
                     nf_refs,
                     &mut block_data.tree,
-                    &mut witness_refs[..],
-                    pool
+                    &mut witness_refs[..]
                 )
             };
         }
