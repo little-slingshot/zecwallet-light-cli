@@ -6,7 +6,6 @@ use std::io::{Error, ErrorKind};
 use std::sync::{Arc, RwLock};
 
 use std::sync::mpsc::channel;
-use threadpool::ThreadPool;
 
 use log::{error, info, warn};
 use subtle::{ConditionallySelectable, ConstantTimeEq, CtOption};
@@ -1806,8 +1805,18 @@ impl LightWallet {
                     //let is_change = spent_from_accounts.contains(&account);
                     
                     Some(WalletShieldedOutput {
-                        index, cmu, epk, account, note, to, is_change: false,
-                        witness: IncrementalWitness::from_tree(tree),
+                        index, // index within transaction.vouts[]
+                        cmu,
+                        epk, // ephemeral private key
+                        account, // ? public key (or pkhash) of the address key-pair?
+                        note, // actual 'coin' data structure. Contains .value
+                        to, // pk of the payee?
+                        is_change: false, // why do we need to highlight if this is a change or no? (also change is kinda detected heuristically anyways [eg. what happens if we have 2 inputs from A,B and multiple outputs to A,B and maybe C ])
+                        witness: IncrementalWitness::from_tree(tree), // what is this? 
+                                                                      // how are we creating it?
+                                                                      // shouldn't this be the path in the Merkle tree?
+                                                                      // where does it point now?
+                                                                      // isn't that it should be pointing to the new coin now?
                     })
                 }
             };
@@ -1835,6 +1844,9 @@ impl LightWallet {
         tree: &mut CommitmentTree<Node>,
         existing_witnesses: &mut [&mut IncrementalWitness<Node>],
     ) -> Vec<zcash_client_backend::wallet::WalletTx> {
+        // wtxs is local variable that is accumulating meaningful transactions from the block.
+        // in other words the invariant of wtxs during the loop
+        // is that it contains all previous transactions.
         let mut wtxs: Vec<zcash_client_backend::wallet::WalletTx> = vec![];
         let ivks = extfvks.iter().map(|extfvk| extfvk.fvk.vk.ivk()).collect::<Vec<_>>();
 
@@ -1842,6 +1854,9 @@ impl LightWallet {
             let num_spends = tx.spends.len();
             let num_outputs = tx.outputs.len();
 
+            // ----------------
+            // SCAN_INPUTS for MEANINGFUL
+            // ----------------
             let (ctx, crx) = channel();
             {
                 let nullifiers = nullifiers.clone();
@@ -1884,11 +1899,14 @@ impl LightWallet {
             }
 
 
+            // ----------------
+            // SCAN_OUTPUTS for MEANINGFUL
+            // ----------------            
             // Check for incoming notes while incrementing tree and witnesses
             let mut shielded_outputs: Vec<WalletShieldedOutput> = vec![];
             {
                 // Grab mutable references to new witnesses from previous transactions
-                // in this block so that we can update them. Scoped so we don't hold
+                // in THIS block so that we can update them. Scoped so we don't hold
                 // mutable references to wtxs for too long.
                 let mut block_witnesses: Vec<_> = wtxs
                     .iter_mut()
@@ -1900,6 +1918,7 @@ impl LightWallet {
                     .flatten()
                     .collect();
 
+                // FUNDAMENTAL OPERATION: WE SCAN ALL THE OUTPUTS!!!!
                 for to_scan in tx.outputs.into_iter().enumerate() {
                     // Grab mutable references to new witnesses from previous outputs
                     // in this transaction so that we can update them. Scoped so we
@@ -1916,7 +1935,7 @@ impl LightWallet {
                         tree,
                         existing_witnesses,
                         &mut block_witnesses,
-                        &mut new_witnesses
+                        &mut new_witnesses // previous outputs in the same trnsaction
                     ) {
                         shielded_outputs.push(output);
                     }
@@ -1932,6 +1951,7 @@ impl LightWallet {
                 }
             });
 
+            // 
             // Update wallet tx
             if !(shielded_spends.is_empty() && shielded_outputs.is_empty()) {
                 let mut txid = TxId([0u8; 32]);
@@ -1951,7 +1971,8 @@ impl LightWallet {
     }
 
     pub fn scan_block(&self, block_bytes: &[u8]) -> Result<(), i32> {
-        self.scan_block_with_pool(&block_bytes, &ThreadPool::new(1))
+        // self.scan_block_with_pool(&block_bytes, &ThreadPool::new(1))
+        self.scan_block_with_pool(&block_bytes)
     }
 
     pub fn scan_block_current_thread(&self, _block_bytes: &[u8]) -> Result<(), i32>{
@@ -1960,7 +1981,7 @@ impl LightWallet {
     }
 
     // Scan a block. Will return an error with the block height that failed to scan
-    pub fn scan_block_with_pool(&self, block_bytes: &[u8], pool: &ThreadPool) -> Result<(), i32> {
+    pub fn scan_block_with_pool(&self, block_bytes: &[u8]) -> Result<(), i32> {
         let block: CompactBlock = match protobuf::Message::parse_from_bytes(block_bytes) {
             Ok(block) => block,
             Err(e) => {
