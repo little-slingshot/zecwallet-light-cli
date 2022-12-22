@@ -1714,7 +1714,7 @@ impl LightWallet {
     ///
     /// The given [`CommitmentTree`] and existing [`IncrementalWitness`]es are incremented
     /// with this output's commitment.
-    fn scan_output_internal(
+    fn scan_compact_output(
         &self,
         height: u64,
         (index, output): (usize, CompactOutput),
@@ -1928,14 +1928,14 @@ impl LightWallet {
                         .map(|output| &mut output.witness)
                         .collect();
 
-                    if let Some(output) = self.scan_output_internal(
+                    if let Some(output) = self.scan_compact_output(
                         block.height,
                         to_scan,
                         &ivks,
                         tree,
                         existing_witnesses,
                         &mut block_witnesses,
-                        &mut new_witnesses // previous outputs in the same trnsaction
+                        &mut new_witnesses // previous outputs in the same transaction
                     ) {
                         shielded_outputs.push(output);
                     }
