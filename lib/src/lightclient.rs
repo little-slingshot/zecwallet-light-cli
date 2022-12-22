@@ -1600,7 +1600,7 @@ impl LightClient {
 
     // @see https://github.com/little-slingshot/zecwallet-light-cli-forum/issues/92
     // [cfg(not(feature = "zephyr_wasm"))]
-    async fn do_sync_internal(&self, print_updates: bool, retry_count: u32) -> Result<JsonValue, String> {
+    pub async fn do_sync_internal(&self, print_updates: bool, retry_count: u32) -> Result<JsonValue, String> {
         // We can only do one sync at a time because we sync blocks in serial order
         // If we allow multiple syncs, they'll all get jumbled up.
         let _lock = self.sync_lock.lock().unwrap();

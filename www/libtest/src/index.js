@@ -66,9 +66,14 @@ async function main(){
     `Running litelib_execute('update_current_price') command`
   );
 
+  // await expect(
+  //   async ()=>await litelib_execute('do_verify_from_last_checkpoint', 'no-params'), // (cmd: String, args_list: String)
+  //   `Running litelib_execute('do_verify_from_last_checkpoint') command`
+  // );
+
   await expect(
-    async ()=>await litelib_execute('do_verify_from_last_checkpoint', 'no-params'), // (cmd: String, args_list: String)
-    `Running litelib_execute('do_verify_from_last_checkpoint') command`
+    async ()=>await litelib_execute('sync_internal', 'no-params'), // (cmd: String, args_list: String)
+    `Running litelib_execute('sync_internal') command`
   );
 
 
