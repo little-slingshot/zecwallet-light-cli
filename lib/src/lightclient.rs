@@ -1381,6 +1381,7 @@ impl LightClient {
 
     // @see https://github.com/little-slingshot/zecwallet-light-cli-forum/issues/93
     pub async fn do_verify_from_last_checkpoint(&self) -> Result<bool, String> {
+        info!("do_verify_from_last_checkpoint()");
         // If there are no blocks in the wallet, then we are starting from scratch, so no need to verify anything.
         let last_height = self.wallet.read().unwrap().last_scanned_height() as u64;
         if last_height == self.config.sapling_activation_height -1 {
@@ -1393,16 +1394,19 @@ impl LightClient {
         // Get the first block's details, and make sure we can compute it from the last checkpoint
         // Note that we get the first block in the wallet (Not the last one). This is expected to be tip - 100 blocks.
         // We use this block to prevent any reorg risk. 
-        let (end_height, _, end_tree) = match self.wallet.read().unwrap().get_wallet_sapling_tree(NodePosition::First) {
+        let (end_height, end_hash, end_tree) = match self.wallet.read().unwrap().get_wallet_sapling_tree(NodePosition::First) {
             Ok(r) => r,
             Err(e) => return Err(format!("No wallet block found: {}", e))
         };
+        info!("do_verify_from_last_checkpoint(): Received wallet end_block: height({}) hash({}) tree({})", end_hash, &end_hash, &end_tree);
 
         // Get the last checkpoint
-        let (start_height, _, start_tree) = match checkpoints::get_closest_checkpoint(&self.config.chain_name, end_height as u64) {
+        let (start_height, start_hash, start_tree) = match checkpoints::get_closest_checkpoint(&self.config.chain_name, end_height as u64) {
             Some(r) => r,
             None => return Err(format!("No checkpoint found"))
         };
+        info!("do_verify_from_last_checkpoint(): Received last checkpoint: height({}) hash({}) tree({})", start_height, start_hash, start_tree);
+
         
         // If the height is the same as the checkpoint, then just compare directly
         if end_height as u64 == start_height {
@@ -1488,6 +1492,7 @@ impl LightClient {
         let verified = computed_tree == end_tree;
         if verified {
             info!("Reset the sapling tree verified to true");
+            info!("Validated tree data: height({}) hash({}) tree({})", end_height, end_hash, end_tree);
             self.wallet.write().unwrap().set_sapling_tree_verified();
         } else {
             warn!("Sapling tree verification failed!");
@@ -1603,7 +1608,7 @@ impl LightClient {
     pub async fn do_sync_internal(&self, print_updates: bool, retry_count: u32) -> Result<JsonValue, String> {
         // We can only do one sync at a time because we sync blocks in serial order
         // If we allow multiple syncs, they'll all get jumbled up.
-        let _lock = self.sync_lock.lock().unwrap();
+        let _lock = self.sync_lock.lock().unwrrap();
 
         // See if we need to verify first
         if !self.wallet.read().unwrap().is_sapling_tree_verified() {
@@ -1630,7 +1635,8 @@ impl LightClient {
             return Err(w);
         }
 
-        info!("Latest block is {}", latest_block);
+        info!("Latest remote block is {}", latest_block);
+        info!("Syncing with remote  {}/{} (need to sync {} blocks)", last_scanned_height,latest_block, latest_block - last_scanned_height);
 
         // Get the end height to scan to.
         let scan_batch_size = 1000;
@@ -1686,7 +1692,7 @@ impl LightClient {
             }
 
             // Fetch compact blocks
-            info!("Fetching blocks {}-{}", start_height, end_height);
+            info!("Fetching {} blocks: [{}-{}]", end_height - start_height + 1,start_height, end_height);
             
             // This was meant to be used in threads of ThreadPool, but as we remove
             // pooling, those Arc&RwLocks will looks confusing. Keep that in mind.
@@ -1697,8 +1703,9 @@ impl LightClient {
 
             // let tpool = pool.clone();
             let block_range = fetch_blocks2(&self.get_server_uri(), start_height, end_height).await?;
+            info!("Fetched range of {} blocks.", block_range.len());
 
-            for (encoded_block_vec, _) in block_range {
+            for (encoded_block_vec, block_hash) in block_range {
                 let encoded_block : &[u8] = &&encoded_block_vec;
 
                 if last_invalid_height_inner.load(Ordering::SeqCst) > 0 {
@@ -1714,7 +1721,8 @@ impl LightClient {
                     Err(_) => {}
                 }
 
-                if let Err(invalid_height) = local_light_wallet.read().unwrap().scan_block_current_thread(encoded_block) {
+                info!("Scanning block {} with hash({})...", block.unwrap().height, block_hash);
+                if let Err(invalid_height) = local_light_wallet.read().unwrap().scan_block(encoded_block) {
                         // Block at this height seems to be invalid, so invalidate up till that point
                         last_invalid_height_inner.store(invalid_height, Ordering::SeqCst);                    
                 }

@@ -853,6 +853,7 @@ impl LightWallet {
         blockhash.extend_from_slice(&block.hash.0);
         blockhash.reverse();
 
+        info!("get_wallet_sapling_tree(): height({}) blockhash({}) tree({})", block.height, hex::encode(&blockhash), hex::encode(&write_buf));
         Ok((block.height, hex::encode(blockhash), hex::encode(write_buf)))
     }
 
@@ -1975,10 +1976,10 @@ impl LightWallet {
         self.scan_block_with_pool(&block_bytes)
     }
 
-    pub fn scan_block_current_thread(&self, _block_bytes: &[u8]) -> Result<(), i32>{
-        error!("Not implemented lightwallet#scan_block_current_thread()");
-        Ok(())
-    }
+    // pub fn scan_block_current_thread(&self, _block_bytes: &[u8]) -> Result<(), i32>{
+    //     error!("Not implemented lightwallet#scan_block_current_thread()");
+    //     Ok(())
+    // }
 
     // Scan a block. Will return an error with the block height that failed to scan
     pub fn scan_block_with_pool(&self, block_bytes: &[u8]) -> Result<(), i32> {
