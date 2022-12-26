@@ -1398,7 +1398,7 @@ impl LightClient {
             Ok(r) => r,
             Err(e) => return Err(format!("No wallet block found: {}", e))
         };
-        info!("do_verify_from_last_checkpoint(): Received wallet end_block: height({}) hash({}) tree({})", end_hash, &end_hash, &end_tree);
+        info!("do_verify_from_last_checkpoint(): Received wallet end_block: height({}) hash({}) tree({})", end_height, &end_hash, &end_tree);
 
         // Get the last checkpoint
         let (start_height, start_hash, start_tree) = match checkpoints::get_closest_checkpoint(&self.config.chain_name, end_height as u64) {
@@ -1608,7 +1608,7 @@ impl LightClient {
     pub async fn do_sync_internal(&self, print_updates: bool, retry_count: u32) -> Result<JsonValue, String> {
         // We can only do one sync at a time because we sync blocks in serial order
         // If we allow multiple syncs, they'll all get jumbled up.
-        let _lock = self.sync_lock.lock().unwrrap();
+        let _lock = self.sync_lock.lock().unwrap();
 
         // See if we need to verify first
         if !self.wallet.read().unwrap().is_sapling_tree_verified() {
@@ -1716,12 +1716,12 @@ impl LightClient {
 
                 match block {
                     Ok(b)=>{
+                        info!("Scanning block {} with hash({})...", b.height, block_hash);
                         block_times_inner.write().unwrap().insert(b.height, b.time);
                     },
                     Err(_) => {}
                 }
 
-                info!("Scanning block {} with hash({})...", block.unwrap().height, block_hash);
                 if let Err(invalid_height) = local_light_wallet.read().unwrap().scan_block(encoded_block) {
                         // Block at this height seems to be invalid, so invalidate up till that point
                         last_invalid_height_inner.store(invalid_height, Ordering::SeqCst);                    
