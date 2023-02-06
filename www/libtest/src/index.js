@@ -88,6 +88,12 @@ async function main(){
   );
 
 
+  await expect(
+    async ()=>await litelib_execute('list_transactions', 'no-params'), // (cmd: String, args_list: String)
+    `Running litelib_execute('list_transactions') command`
+  );
+
+
   // those two are dummies anyways...
   // await expect(
   //   async ()=>await litelib_initialize_existing('324124bacc'), // (wallet_hex: String)

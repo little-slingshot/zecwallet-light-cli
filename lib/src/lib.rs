@@ -193,6 +193,10 @@ pub async fn litelib_execute(cmd: String, _args_list: String) -> String {
         Err(e)=>format!("sync_internal() Error {}",e)
       }
     }
+    else if cmd == "list_transactions" {
+      let j = lightclient.do_list_transactions(false);
+      resp = j.pretty(2).clone()
+    }
     // else if cmd == "rescan" {
     //   resp = match lightclient.do_rescan().await {
     //     Ok(j) => j.pretty(2),
