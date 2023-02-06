@@ -3,6 +3,15 @@ name = "zecwalletlitelib"
 version = "0.1.0"
 edition = "2018"
 
+# See https://rustwasm.github.io/wasm-pack/book/cargo-toml-configuration.html
+[package.metadata.wasm-pack.profile.release]
+# To fix wasm-opt SEGFAULTING on Ubuntu (but seemingly fine on MacOS) had to 
+# lower the optimization level (versus the default level). IIRC turning off
+# optimizatino completely resulted in problems with the final executable too :/
+wasm-opt = ["-O1"]
+
+
+
 [lib]
 crate-type = ["cdylib", "rlib"]
 
