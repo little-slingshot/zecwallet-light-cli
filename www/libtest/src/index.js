@@ -34,9 +34,20 @@ async function main(){
 
   // alert('Loaded');
 
+  // await expect(
+  //   // generate random hex using `cat /dev/urandom | head -c32 | xxd -p -c 10000`
+  //   async ()=>await litelib_initialize_new('556809f91dadf7ca8aac1fa20eab54f87a0fe9a3e76ca711b3d5d61cdf2ade61'), // (entropy: String)
+  //   '{"seed":"fever doctor layer deputy term torch click loop pear inspire steel valley path visit moon unique poem mirror voice promote social nice kangaroo crazy","birthday":1758140}'
+  // );
+
   await expect(
     // generate random hex using `cat /dev/urandom | head -c32 | xxd -p -c 10000`
-    async ()=>await litelib_initialize_new('556809f91dadf7ca8aac1fa20eab54f87a0fe9a3e76ca711b3d5d61cdf2ade61'), // (entropy: String)
+    async ()=>await litelib_initialize_new_from_phrase(
+      // (seed: String, birthday: u64)
+      // "fever-doctor" is a dummy seed which has no transactions...
+      "fever doctor layer deputy term torch click loop pear inspire steel valley path visit moon unique poem mirror voice promote social nice kangaroo crazy",
+      BigInt(1624864-10000),
+      ), 
     '{"seed":"fever doctor layer deputy term torch click loop pear inspire steel valley path visit moon unique poem mirror voice promote social nice kangaroo crazy","birthday":1758140}'
   );
   

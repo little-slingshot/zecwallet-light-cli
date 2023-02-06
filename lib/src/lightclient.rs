@@ -535,8 +535,8 @@ impl LightClient {
     }
 
 
-    /// Create a brand new wallet with a new seed phrase. Will fail if a wallet file 
-    /// already exists on disk
+    /// Create a brand new wallet with a new random seed phrase generated from entropy. 
+    /// Will fail if a wallet file already exists on disk
     pub async fn new(config: &LightClientConfig, latest_block: u64, entropy: String) -> io::Result<Self> {
         // [cfg(all(not(target_os="ios"), not(target_os="android"), not(target_family="wasm")))]
         #[cfg(all(not(target_os="ios"), not(target_os="android"), not(feature = "zephyr_wasm")))]
@@ -551,7 +551,7 @@ impl LightClient {
 
     }
 
-    pub async fn new_from_phrase(seed_phrase: String, entropy: String, config: &LightClientConfig, birthday: u64, overwrite: bool) -> io::Result<Self> {
+    pub async fn new_from_phrase(seed_phrase: String, config: &LightClientConfig, birthday: u64, overwrite: bool) -> io::Result<Self> {
         #[cfg(all(not(target_os="ios"), not(target_os="android"), not(feature = "zephyr_wasm")))]
         {
             if !overwrite && config.wallet_exists() {
@@ -561,7 +561,7 @@ impl LightClient {
         }
 
         let mut l = LightClient {
-                wallet          : Arc::new(RwLock::new(LightWallet::new(Some(seed_phrase), Some(entropy), config, birthday)?)),
+                wallet          : Arc::new(RwLock::new(LightWallet::new(Some(seed_phrase), None, config, birthday)?)),
                 config          : config.clone(),
                 sapling_output  : vec![], 
                 sapling_spend   : vec![],

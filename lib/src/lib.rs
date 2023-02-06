@@ -40,6 +40,7 @@ pub mod proto;
 #[macro_use]
 extern crate lazy_static;
 
+use log::warn;
 use web_sys::console;
 use wasm_bindgen::prelude::{/* JsValue , */ wasm_bindgen};
 // use zecwalletlitelib::lightclient::lightclient_config::LightClientConfig;
@@ -117,9 +118,32 @@ pub async fn litelib_initialize_new(entropy: String) -> String {
 
 /// Restore a wallet from the seed phrase
 #[wasm_bindgen]
-pub async fn litelib_initialize_new_from_phrase(_seed: String, _birthday: u64) -> String {
+pub async fn litelib_initialize_new_from_phrase(seed: String, birthday: u64) -> String {
   utils::set_panic_hook();
-  return "Restore a wallet from the seed phrase".to_string();
+
+  let server = LightClientConfig::get_server_or_default(Some("www.com".to_string()));
+  let (config, _ ) = match LightClientConfig::create(server.clone()).await {
+    Ok((config, height))=> (config, height),
+    Err(e)=>{
+      let edump = format!("LightClientConfig::create() error: {:#?}",e);
+      warn!("{}", edump);
+      return format!("Error calling LightClientConfig::create({}) {}", server, e);
+    }
+  };
+
+  let lightclient = match LightClient::new_from_phrase(seed, &config, birthday, false).await {
+    Ok(l) => l,
+    Err(e) => {
+      return format!("Error calling Lightclient::new_from_phrase(config, <seed>, birthday={}): {}", birthday, e);
+    }
+  };
+
+  {
+    let lc = LIGHTCLIENT.lock().unwrap();
+    lc.replace(Some(Arc::new(lightclient)));
+  }
+
+  format!("OK")
 }
 
 
