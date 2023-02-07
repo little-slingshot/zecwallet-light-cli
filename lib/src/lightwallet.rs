@@ -1718,6 +1718,8 @@ impl LightWallet {
     fn scan_compact_output(
         &self,
         height: u64,
+        txindex: usize,
+        txid: &TxId,
         (index, output): (usize, CompactOutput),
         ivks: &[jubjub::Fr],
         tree: &mut CommitmentTree<Node>,
@@ -1736,9 +1738,17 @@ impl LightWallet {
             let epk = epk.clone();
             let ct = ct.clone();
             let tx = tx.clone();
+            let serialized_key = "<serialized-key-goes-here>";
 
             // pool.execute(move || {
-            let execute = || {
+            let execute = move || {
+                info!("Trydecrypt block[block_height{}].vtx[txindex{}/txid{}].vout[voutindex{}] with key serialized_key({})",
+                    height, 
+                    txindex, 
+                    txid, 
+                    index, // voutindex
+                    serialized_key 
+                );
                 let m = try_sapling_compact_note_decryption(
                     &MAIN_NETWORK, BlockHeight::from_u32(height as u32), &ivk, &epk, &cmu, &ct);
                 let r = match m {
@@ -1851,9 +1861,13 @@ impl LightWallet {
         let mut wtxs: Vec<zcash_client_backend::wallet::WalletTx> = vec![];
         let ivks = extfvks.iter().map(|extfvk| extfvk.fvk.vk.ivk()).collect::<Vec<_>>();
 
-        for tx in block.vtx.into_iter() {
+        for (txindex, tx) in block.vtx.into_iter().enumerate() {
             let num_spends = tx.spends.len();
             let num_outputs = tx.outputs.len();
+
+
+            let mut txid = TxId([0u8; 32]);
+            txid.0.copy_from_slice(&tx.hash);            
 
             // ----------------
             // SCAN_INPUTS for MEANINGFUL
@@ -1931,6 +1945,8 @@ impl LightWallet {
 
                     if let Some(output) = self.scan_compact_output(
                         block.height,
+                        txindex,
+                        &txid,
                         to_scan,
                         &ivks,
                         tree,
