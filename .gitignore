@@ -9,11 +9,16 @@ rsd/*
 lib/rsd/*
 /testdata
 /tmp
-/www/libtest/node_modules
-/www/libtest/dist
+/runners/wwwlib/node_modules
+/runners/wwwlib/dist
+/runners/wwwlib/dist.copy.20230131
+/runners/nodelib/node_modules
 *.0.rs
 *.1.rs
 *.2.rs
+*.0.js
+*.1.js
+*.2.js
 *.symlink
 
 

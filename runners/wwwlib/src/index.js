@@ -44,11 +44,13 @@ async function main(){
     // generate random hex using `cat /dev/urandom | head -c32 | xxd -p -c 10000`
     async ()=>await litelib_initialize_new_from_phrase(
       // (seed: String, birthday: u64)
-      // "fever-doctor" is a dummy seed which has no transactions...
-      "fever doctor layer deputy term torch click loop pear inspire steel valley path visit moon unique poem mirror voice promote social nice kangaroo crazy",
-      BigInt(1624864-10000),
+      // "fever doctor layer deputy term torch click loop pear inspire steel valley path visit moon unique poem mirror voice promote social nice kangaroo crazy",
+      "slot deal enter foot glare autumn hammer large point toss skate machine skate tube assume float strategy grant pair start gorilla jazz bullet chicken",
+      // BigInt(1624864-10000),
+      BigInt(1462247-10000), // block 1462247 is where our test transaction is located
       ), 
-    '{"seed":"fever doctor layer deputy term torch click loop pear inspire steel valley path visit moon unique poem mirror voice promote social nice kangaroo crazy","birthday":1758140}'
+    // '{"seed":"fever doctor layer deputy term torch click loop pear inspire steel valley path visit moon unique poem mirror voice promote social nice kangaroo crazy","birthday":1758140}'
+    '{"seed":"slot deal enter foot glare autumn hammer large point toss skate machine skate tube assume float strategy grant pair start gorilla jazz bullet chicken","birthday":1758140}'
   );
   
   // We actually do not expect this to return corectly, as such a command does not exist...

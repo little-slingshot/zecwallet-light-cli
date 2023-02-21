@@ -1,4 +1,4 @@
-import {
+const {
   Empty,
   LightdInfo,
   ChainSpec,
@@ -10,10 +10,10 @@ import {
   PriceRequest,
   // TreeState,
   CompactTxStreamerPromiseClient,
-} from './proto/service_grpc_web_pb';
+} = require('./proto/service_grpc_web_pb');
 
-import { TreeState } from './proto/service_pb'
-import hex from 'hex-string';
+// import { TreeState } from './proto/service_pb'
+const hex = require('hex-string');
 
 // const ENVOY_PROXY="http://localhost:8080";
 // const ENVOY_PROXY = 'http://23.146.144.13:8080';
@@ -38,11 +38,11 @@ function  fromBigIntToSafeNumber(b){
   return Number(b);
 }
 
-window.unix = function(){
+(window || global).unix = function(){
   return Math.floor(Date.now()/1000);
 }
 
-window.hex2a = function hex2a(hex) {
+(window || global).hex2a = function hex2a(hex) {
   var str = '';
   for (var i = 0; i < hex.length; i += 2) str += String.fromCharCode(parseInt(hex.substr(i, 2), 16));
   return str;
@@ -69,7 +69,7 @@ function asHex(resp){
   return hexSerialized;
 }
 
-export async function fake_getInfo() {
+async function fake_getInfo() {
   // return some hex string which should be 
   // serialized into LightdInfo struct...
 
@@ -102,7 +102,7 @@ export async function fake_getInfo() {
 }
 
 
-export async function getInfo() {
+async function getInfo() {
   try {
     const client = new CompactTxStreamerPromiseClient(ENVOY_PROXY);
     const request = new Empty();
@@ -135,7 +135,7 @@ export async function getInfo() {
  *                        of { blockHeight, txIndex }
  * @returns {String} hexadecimal representation of binary payload
  */
-export async function getFullTx(txhex) {
+async function getFullTx(txhex) {
   try {
     const request = new TxFilter();
 
@@ -170,10 +170,10 @@ export async function getFullTx(txhex) {
 }
 
 // Returns a single string, delimited by "\n", each row contains a hex-encoded block
-export function getTransparentTxids(address, startHeight, endHeight) {
+function getTransparentTxids(address, startHeight, endHeight) {
   return new Promise((resolve, reject) => {
     try {
-      debugger;
+      // debugger;
       const startBlock = new BlockID();
       startBlock.setHeight(fromBigIntToSafeNumber(startHeight));
       const endBlock = new BlockID();
@@ -212,7 +212,7 @@ export function getTransparentTxids(address, startHeight, endHeight) {
 }
 
 // // returns??? what  (if it returns txids?)
-// export async function getAddressTxids(address){
+// async function getAddressTxids(address){
 //   // how to handle address?
 //   // return asHex(await client().getAddressTxids(req));
 //   const req = new Empty();
@@ -227,7 +227,7 @@ export function getTransparentTxids(address, startHeight, endHeight) {
 // }  
 
 // Returns a single string, delimited by "\n", each row contains a hex-encoded block
-export function getBlockRange(startHeight, endHeight) {
+function getBlockRange(startHeight, endHeight) {
   return new Promise((resolve, reject) => {
     console.log('JS getBlockRange', startHeight, ' to ', endHeight);
     try {
@@ -263,7 +263,7 @@ export function getBlockRange(startHeight, endHeight) {
   });
 }
 
-export async function getLatestBlock() {
+async function getLatestBlock() {
   try {
     const request = new ChainSpec();
     const resp = await client().getLatestBlock(request, {});
@@ -279,7 +279,7 @@ export async function getLatestBlock() {
   }
 }
 
-export async function sendTransaction(txHex) {
+async function sendTransaction(txHex) {
   try {
     const client = new CompactTxStreamerPromiseClient(ENVOY_PROXY);
 
@@ -305,12 +305,12 @@ export async function sendTransaction(txHex) {
  * @param {String} currency fiat currency to receive ZEC price in, eg 'USD'
  * @returns {String} hex-representation of binary struct data
  */
-export async function getZecPrice(unixTimestamp, currency){
+async function getZecPrice(unixTimestamp, currency){
   // const unixTimestamp = Math.floor(Date.now() / 1000);
   // if ('bigint' !== typeof unixTimestamp){
   //   throw new Error(`Parameter unixTimestamp must be of type BigInt, actual type ${typeof unixTimestamp}`);
   // }
-  debugger;
+  // debugger;
   const request = new PriceRequest();
   request.setCurrency(currency);
   request.setTimestamp(fromBigIntToSafeNumber(unixTimestamp));
@@ -318,7 +318,7 @@ export async function getZecPrice(unixTimestamp, currency){
   return asHex(res);
 }
 
-export async function getCurrentZecPrice(){
+async function getCurrentZecPrice(){
   try{
 
     const client = new CompactTxStreamerPromiseClient(ENVOY_PROXY);
@@ -345,9 +345,9 @@ export async function getCurrentZecPrice(){
  * @param {String} blockHashAsHexString 
  * @returns 
  */
-export async function getTreeState(blockHeight, blockHashAsHexString){
+async function getTreeState(blockHeight, blockHashAsHexString){
 
-  debugger;
+  // debugger;
   const req = new BlockID();
   // TODO: as those parameters will be called by wasm, they will ALWAYS be set
   // the question is .... what values can they be? (should they be Options?)
@@ -382,6 +382,22 @@ export async function getTreeState(blockHeight, blockHashAsHexString){
 
 }
 
-export function doLog(value) {
+function doLog(value) {
   console.log('doLog', value);
 }
+
+
+module.exports = {
+  fake_getInfo,
+  getInfo,
+  getFullTx,
+  getTransparentTxids,
+  // getAddressTxids,
+  getBlockRange,
+  getLatestBlock,
+  sendTransaction,
+  getZecPrice,
+  getCurrentZecPrice,
+  getTreeState,
+  doLog,
+};
