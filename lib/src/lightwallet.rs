@@ -1,6 +1,6 @@
 use std::cmp;
 use std::collections::{HashMap, HashSet};
-use std::convert::TryFrom;
+use std::convert::{TryFrom, TryInto};
 use std::io::{self, Read, Write};
 use std::io::{Error, ErrorKind};
 use std::sync::{Arc, RwLock};
@@ -1730,6 +1730,12 @@ impl LightWallet {
         let cmu = output.cmu().ok()?;
         let epk = output.epk().ok()?;
         let ct = output.ciphertext;
+        let target_txid_bytes: [u8; 32] = [223, 44, 4, 28, 165, 247, 241, 64, 33, 213, 160, 49, 179, 210, 164, 251, 129, 12, 134, 187, 88, 201, 123, 234, 82, 207, 1, 169, 49, 161, 178, 77];
+        let mut target_txid_bytes_reverse = target_txid_bytes.to_vec();
+        target_txid_bytes_reverse.reverse();
+        let target_txid = TxId(target_txid_bytes);
+        // let target_txid_reverse = TxId(target_txid_bytes_reverse.as_slice());
+        let target_txid_reverse = TxId(target_txid_bytes_reverse[..].try_into().unwrap());
 
         let (tx, rx) = channel();
         ivks.iter().enumerate().for_each(|(account, ivk)| {
@@ -1738,17 +1744,31 @@ impl LightWallet {
             let epk = epk.clone();
             let ct = ct.clone();
             let tx = tx.clone();
-            let serialized_key = "<serialized-key-goes-here>";
+            let serialized_key = format!("[{}]/{:?}", account, ivk);
+            // let serialized_key = format!("<serialized-key-goes-here>");
 
             // pool.execute(move || {
             let execute = move || {
-                info!("Trydecrypt block[block_height{}].vtx[txindex{}/txid{}].vout[voutindex{}] with key serialized_key({})",
-                    height, 
-                    txindex, 
-                    txid, 
-                    index, // voutindex
-                    serialized_key 
-                );
+                if height == 1462247 {
+                    if target_txid == *txid {
+                        info!("Trydecrypt block[{}].vtx[txindex({})/txid({})].vout[{}] with key serialized_key({})",
+                            height, 
+                            txindex, 
+                            txid, 
+                            index, // voutindex
+                            serialized_key 
+                        );
+                    }
+                    if target_txid_reverse == *txid {
+                        info!("Trydecrypt-reverse block[{}].vtx[txindex({})/txid({})].vout[{}] with key serialized_key({})",
+                            height, 
+                            txindex, 
+                            txid, 
+                            index, // voutindex
+                            serialized_key 
+                        );
+                    }                    
+                }
                 let m = try_sapling_compact_note_decryption(
                     &MAIN_NETWORK, BlockHeight::from_u32(height as u32), &ivk, &epk, &cmu, &ct);
                 let r = match m {

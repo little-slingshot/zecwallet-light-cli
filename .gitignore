@@ -19,7 +19,12 @@ lib/rsd/*
 *.0.js
 *.1.js
 *.2.js
+*.0.json
+*.1.json
+*.2.json
 *.symlink
+*.log
+
 
 
 

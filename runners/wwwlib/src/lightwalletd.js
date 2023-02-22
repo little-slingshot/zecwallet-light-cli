@@ -229,7 +229,7 @@ function getTransparentTxids(address, startHeight, endHeight) {
 // Returns a single string, delimited by "\n", each row contains a hex-encoded block
 function getBlockRange(startHeight, endHeight) {
   return new Promise((resolve, reject) => {
-    console.log('JS getBlockRange', startHeight, ' to ', endHeight);
+    console.log('JS getBlockRange', startHeight, ' to ', endHeight, ` total of ${endHeight - startHeight} blocks`);
     try {
       const startBlock = new BlockID();
       startBlock.setHeight(Number(startHeight));
@@ -241,10 +241,14 @@ function getBlockRange(startHeight, endHeight) {
       blockRange.setEnd(endBlock);
 
       const retValue = [];
+      let retCountBytes = 0;
 
       const resp = client().getBlockRange(blockRange);
       resp.on('data', (resp) => {
+        
         const hexBin = hex.encode(resp.serializeBinary());
+        retCountBytes += hexBin.length / 2;
+        console.log(`[${new Date()}] Received data packet: ${hexBin.length/2} bytes with total of ${retCountBytes.toLocaleString()}`);
         retValue.push(hexBin);
       });
 
@@ -254,6 +258,7 @@ function getBlockRange(startHeight, endHeight) {
       });
 
       resp.on('end', () => {
+        console.log(`getBlockRange() returning result of size ${retCountBytes.toLocaleString()} bytes`);
         resolve(retValue.join('\n'));
       });
     } catch (err) {

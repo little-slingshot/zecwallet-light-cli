@@ -1716,7 +1716,7 @@ impl LightClient {
 
                 match block {
                     Ok(b)=>{
-                        info!("Scanning block {} with hash({})...", b.height, block_hash);
+                        info!("Scanning block {} with hash({:?})...", b.height, b.hash);
                         block_times_inner.write().unwrap().insert(b.height, b.time);
                     },
                     Err(_) => {}
@@ -1895,7 +1895,6 @@ impl LightClient {
             let light_wallet_clone = self.wallet.clone();
             let server_uri = self.get_server_uri();
 
-            // txids_to_fetch.par_iter().map(|(txid, height)| {
             for (txid, height) in txids_to_fetch.iter() {
                 info!("Fetching full Tx: {}", txid);
                 match fetch_full_tx(&server_uri, *txid).await {
@@ -1910,19 +1909,6 @@ impl LightClient {
                 };
             }
             res
-            // txids_to_fetch.iter().map(|(txid, height)| {
-            //     info!("Fetching full Tx: {}", txid);
-
-            //     match fetch_full_tx(&server_uri, *txid).await {
-            //         Ok(tx_bytes) => {
-            //             let tx = Transaction::read(&tx_bytes[..]).unwrap();
-    
-            //             light_wallet_clone.read().unwrap().scan_full_tx(&tx, *height, 0);
-            //             Ok(())
-            //         },
-            //         Err(e) => Err(e)
-            //     }
-            // }).collect()
         };
         
         // Wait for all the fetches to finish.
